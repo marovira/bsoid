@@ -30,7 +30,7 @@ namespace bsoid
 
             void setModel(tree::BlobTree const& tree);
             void setIsoValue(float isoValue);
-            void setResolution(glm::u32vec3 const& res);
+            void setResolution(std::uint32_t res);
 
             void polygonize();
 

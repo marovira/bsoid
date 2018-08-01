@@ -7,12 +7,7 @@
 
 #include <cinttypes>
 #include <limits>
-#include <emmintrin.h>
-
-namespace std
-{
-    using uint128_t = __m128i;
-}
+#include "uint128_t.hpp"
 
 
 namespace bsoid
@@ -30,8 +25,18 @@ namespace bsoid
             }
         };
 
+        template <typename T>
+        struct BsoidEdgeHash
+        {
+            template <typename G>
+            static constexpr T hash(G h1, G h2)
+            {
+                return { h1, h2 };
+            }
+        };
+
         using BsoidHash64 = BsoidHash<std::uint64_t>;
-        using BsoidHash128 = BsoidHash<std::uint128_t>;
+        using BsoidHash128 = BsoidEdgeHash<std::uint128_t>;
     }
 }
 

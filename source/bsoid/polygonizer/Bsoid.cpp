@@ -15,8 +15,9 @@
 #include <queue>
 
 #include <tbb/parallel_for.h>
-#include <tbb/task_group.h>
-#include <tbb/parallel_invoke.h>
+#include <glm/gtx/component_wise.hpp>
+
+#define DISABLE_PARALLEL 0
 
 
 namespace bsoid
@@ -29,16 +30,22 @@ namespace bsoid
 
         Bsoid::Bsoid(tree::BlobTree const& model, std::string const& name,
             float isoValue) :
-            mTree(std::make_unique<tree::BlobTree>(model)),
             mMagic(isoValue),
+            mTree(std::make_unique<tree::BlobTree>(model)),
             mName(name)
         { }
 
         Bsoid::Bsoid(Bsoid&& b) :
+            mGridDelta(b.mGridDelta),
+            mSvDelta(b.mSvDelta),
+            mMin(b.mMin),
+            mMax(b.mMax),
+            mGridSize(b.mGridSize),
+            mSvSize(b.mSvSize),
+            mMagic(b.mMagic),
             mLattice(std::move(b.mLattice)),
             mTree(std::move(b.mTree)),
             mMesh(std::move(b.mMesh)),
-            mMagic(b.mMagic),
             mLog(std::move(b.mLog)),
             mName(b.mName)
         { }
@@ -53,6 +60,21 @@ namespace bsoid
             mMagic = isoValue;
         }
 
+        void Bsoid::setResolution(std::uint64_t res, std::uint64_t svRes)
+        {
+            mGridSize = res;
+            mSvSize = svRes;
+
+            auto box = mTree->getTreeBox();
+            auto const& end = box.pMax;
+            auto const& start = box.pMin;
+
+            mGridDelta = (end - start) / static_cast<float>(mGridSize);
+            mSvDelta = (end - start) / static_cast<float>(mSvSize);
+            mMin = start;
+            mMax = end;
+        }
+
         tree::BlobTree* Bsoid::tree() const
         {
             return mTree.get();
@@ -60,65 +82,15 @@ namespace bsoid
 
         void Bsoid::constructLattice()
         {
-            using atlas::math::Point;
-            using atlas::utils::BBox;
-
-            atlas::core::Timer<float> global;
-            atlas::core::Timer<float> t;
-
-            // First construct the grid of super-voxels.
-            tbb::parallel_for(static_cast<std::uint64_t>(0), mSvSize, 
-                [this](std::uint64_t x) {
-                tbb::parallel_for(static_cast<std::uint64_t>(0), mSvSize,
-                    [this, x](std::uint64_t y) {
-                    tbb::parallel_for(static_cast<std::uint64_t>(0), mSvSize,
-                        [this, x, y](std::uint64_t z)
-                    {
-                        auto pt = createCellPoint(x, y, z, mSvDelta);
-                        BBox cell(pt, pt + mSvDelta);
-
-                        SuperVoxel sv;
-                        sv.field = mTree->getSubTree(cell);
-                        sv.id = {x, y, z};
-
-                        if (sv.field)
-                        {
-                            // critical section.
-                            std::lock_guard<std::mutex> lock(mSvMutex);
-                            auto idx = BsoidHash64::hash(x, y, z);
-                            mSuperVoxels[idx] = sv;
-                        }
-                    });
-                });
-            });
-
-            // Now that we have the grid of super-voxels, we can grab the seeds
-            // and convert them into voxels in parallel.
-            auto seedPoints = mTree->getSeeds();
-            std::vector<Voxel> seedVoxels(seedPoints.size());
-            tbb::parallel_for(static_cast<std::size_t>(0), seedVoxels.size(),
-                [this, seedPoints, &seedVoxels](std::size_t i) 
-            {
-                auto pt = seedPoints[i];
-                auto v = (pt - mMin) / mGridDelta;
-                PointId id;
-                id.x = static_cast<std::uint64_t>(v.x);
-                id.y = static_cast<std::uint64_t>(v.y);
-                id.z = static_cast<std::uint64_t>(v.z);
-                seedVoxels[i] = Voxel(id);
-            });
-
-            // We have the seed voxels now, so we have to setup the 
-
+            makeVoxels();
+            mLattice.makeLattice(mVoxels);
+            validateVoxels();
         }
 
         
         void Bsoid::constructMesh()
         {
-            using atlas::math::Point;
-
-            atlas::core::Timer<float> global;
-            atlas::core::Timer<float> t;
+            makeTriangles();
         }
 
         void Bsoid::polygonize()
@@ -132,7 +104,7 @@ namespace bsoid
             mLog << "#===========================#\n";
             // Generate lattices.
             {
-                constructLattice();
+                makeVoxels();
             }
 
             mLog << "\nMesh generation.\n";
@@ -180,6 +152,73 @@ namespace bsoid
         void Bsoid::saveMesh()
         {
             mMesh.saveToFile(mName + ".obj");
+        }
+
+        void Bsoid::makeVoxels()
+        {
+            using atlas::math::Point;
+            using atlas::utils::BBox;
+
+            atlas::core::Timer<float> global;
+            atlas::core::Timer<float> t;
+
+            // First construct the grid of super-voxels.
+            tbb::parallel_for(static_cast<std::uint64_t>(0), mSvSize, 
+                [this](std::uint64_t x) {
+                tbb::parallel_for(static_cast<std::uint64_t>(0), mSvSize,
+                    [this, x](std::uint64_t y) {
+                    tbb::parallel_for(static_cast<std::uint64_t>(0), mSvSize,
+                        [this, x, y](std::uint64_t z)
+                    {
+                        auto pt = createCellPoint(x, y, z, mSvDelta);
+                        BBox cell(pt, pt + mSvDelta);
+
+                        SuperVoxel sv;
+                        sv.field = mTree->getSubTree(cell);
+                        sv.id = {x, y, z};
+
+                        if (sv.field)
+                        {
+                            // critical section.
+                            std::lock_guard<std::mutex> lock(mSvMutex);
+                            auto idx = BsoidHash64::hash(x, y, z);
+                            mSuperVoxels[idx] = sv;
+                        }
+                    });
+                });
+            });
+
+            // Now that we have the grid of super-voxels, we can grab the seeds
+            // and convert them into voxels in parallel.
+            auto seedPoints = mTree->getSeeds();
+            std::vector<Voxel> seedVoxels(seedPoints.size());
+#if (DISABLE_PARALLEL)
+            std::size_t i = 0;
+            for (auto& pt : seedPoints)
+            {
+                auto v = (pt - mMin) / mGridDelta;
+                PointId id;
+                id.x = static_cast<std::uint64_t>(v.x);
+                id.y = static_cast<std::uint64_t>(v.y);
+                id.z = static_cast<std::uint64_t>(v.z);
+                seedVoxels[i] = Voxel(id);
+                ++i;
+            }
+#else
+            tbb::parallel_for(static_cast<std::size_t>(0), seedVoxels.size(),
+                [this, seedPoints, &seedVoxels](std::size_t i) 
+            {
+                auto pt = seedPoints[i];
+                auto v = (pt - mMin) / mGridDelta;
+                PointId id;
+                id.x = static_cast<std::uint64_t>(v.x);
+                id.y = static_cast<std::uint64_t>(v.y);
+                id.z = static_cast<std::uint64_t>(v.z);
+                seedVoxels[i] = Voxel(id);
+            });
+#endif
+
+            marchVoxelOnSurface(seedVoxels);
         }
 
 
@@ -253,11 +292,21 @@ namespace bsoid
 
         void Bsoid::fillVoxel(Voxel& v)
         {
+#if (DISABLE_PARALLEL)
+            std::size_t d = 0;
+            for (auto& id : VoxelDecals)
+            {
+                auto decalId = v.id + id;
+                v.points[d] = findVoxelPoint(decalId);
+                ++d;
+            }
+#else
             tbb::parallel_for(static_cast<std::size_t>(0), 
                 VoxelDecals.size(), [this, &v](std::size_t d) {
                 auto decalId = v.id + VoxelDecals[d];
                 v.points[d] = findVoxelPoint(decalId);
             });
+#endif
         }
 
         bool Bsoid::seenVoxel(VoxelId const& id)
@@ -277,6 +326,53 @@ namespace bsoid
             }
         }
 
+        FieldPoint Bsoid::interpolate(FieldPoint const& p1, FieldPoint const& p2)
+        {
+            auto pt = glm::mix(p1.value.xyz(), p2.value.xyz(),
+                (mMagic - p1.value.w) / (p2.value.w - p1.value.w));
+
+            auto hash = p1.svHash;
+            auto sv = mSuperVoxels[hash];
+            auto val = sv.eval(pt);
+            auto grad = sv.grad(pt);
+            return FieldPoint(pt, val, grad, hash);
+        }
+
+        Bsoid::LinePoint Bsoid::generateLinePoint(PointId const& p1, 
+            PointId const& p2, FieldPoint const& fp1, FieldPoint const& fp2)
+        {
+            auto h1 = BsoidHash64::hash(p1.x, p1.y, p1.z);
+            auto h2 = BsoidHash64::hash(p2.x, p2.y, p2.z);
+
+            auto edgeHash1 = BsoidHash128::hash(h1, h2);
+            auto edgeHash2 = BsoidHash128::hash(h2, h1);
+
+            auto entry1 = mComputedPoints.find(edgeHash1);
+            auto entry2 = mComputedPoints.find(edgeHash2);
+
+            if (entry1 != mComputedPoints.end() ||
+                entry2 != mComputedPoints.end())
+            {
+                if (entry1 != mComputedPoints.end())
+                {
+                    return (*entry1).second;
+                }
+                
+                return (*entry2).second;
+            }
+            else
+            {
+                auto edgeHash = edgeHash1;
+                auto pt = interpolate(fp1, fp2);
+
+                LinePoint p(pt, edgeHash);
+                std::lock_guard<std::mutex> lock(mPointMutex);
+                mComputedPoints.insert(
+                    std::pair<std::uint128_t, LinePoint>(edgeHash, p));
+                return p;
+            }
+        }
+
         void Bsoid::marchVoxelOnSurface(std::vector<Voxel> const& seeds)
         {
             using atlas::math::Point4;
@@ -284,23 +380,45 @@ namespace bsoid
 
             auto getEdges = [this](Voxel const& v)
             {
-                FieldPoint start, end;
                 int edgeId = 0;
                 std::vector<int> edges;
-                // Could be done with a parallel_for.
-                for (std::size_t i = 0; i < v.points.size(); ++i)
+                std::mutex edgesMutex;
+#if (DISABLE_PARALLEL)
+                FieldPoint start, end;
+                for (auto& decal : EdgeDecals)
                 {
-                    start = v.points[i];
-                    end = v.points[(i + 1) % v.points.size()];
+                    start = v.points[decal.x];
+                    end = v.points[decal.y];
                     float val1 = start.value.w - mMagic;
                     float val2 = end.value.w - mMagic;
 
                     if (glm::sign(val1) != glm::sign(val2))
                     {
-                        edges.push_back(edgeId);
+                        auto map = NeighbourMap[edgeId];
+                        edges.insert(edges.end(), map.begin(), map.end());
                     }
                     edgeId++;
                 }
+#else
+                tbb::parallel_for(static_cast<std::size_t>(0), EdgeDecals.size(),
+                    [this, &edges, &edgesMutex, &v](std::size_t edgeId)
+                    {
+                        FieldPoint start, end;
+                        auto decal = EdgeDecals[edgeId];
+                        start = v.points[decal.x];
+                        end = v.points[decal.y];
+                        float val1 = start.value.w - mMagic;
+                        float val2 = end.value.w - mMagic;
+
+                        if (glm::sign(val1) != glm::sign(val2))
+                        {
+                            auto map = NeighbourMap[edgeId];
+                            std::lock_guard<std::mutex> lock(edgesMutex);
+                            edges.insert(edges.end(), map.begin(), map.end());
+                        }
+
+                    });
+#endif
 
                 return edges;
             };
@@ -337,9 +455,7 @@ namespace bsoid
                         norm = (originVal > mMagic) ? -norm : norm;
 
                         // Now find the voxel that we are pointing to.
-                        auto absNorm = glm::abs(norm);
-                        Point next;
-                        // Somehow figure out which voxel to move to.
+                        glm::ivec3 next = glm::sign(norm);
 
                         current.id.x += static_cast<std::uint64_t>(next.x);
                         current.id.y += static_cast<std::uint64_t>(next.y);
@@ -360,10 +476,27 @@ namespace bsoid
                     return current;
                 };
 
-                tbb::parallel_for(seeds.begin(), seeds.end(),
+#if (DISABLE_PARALLEL)
+                std::size_t i = 0;
+                for (auto& seed : seeds)
+                {
+                    auto v = seeds[i];
+                    if (!containsSurface(seed))
+                    {
+                        v = findSurface(v);
+                        if (!validVoxel(v))
+                        {
+                            return;
+                        }
+                    }
+                    frontier.push(v.id);
+                }
+#else
+                tbb::parallel_for(static_cast<std::size_t>(0), seeds.size(),
                     [this, containsSurface, findSurface, &frontierMutex, 
-                    &frontier](Voxel& seed) {
-                    auto v = seed;
+                    &frontier, seeds](std::size_t i) {
+                    auto& seed = seeds[i];
+                    auto v = seeds[i];
                     if (!containsSurface(seed))
                     {
                         v = findSurface(v);
@@ -378,6 +511,7 @@ namespace bsoid
                         frontier.push(v.id);
                     }
                 });
+#endif
             }
 
             // See whether there is a sensible way of parallelizing this later.
@@ -406,9 +540,10 @@ namespace bsoid
                     continue;
                 }
 
+#if (DISABLE_PARALLEL)
                 for (auto& edge : edges)
                 {
-                    auto decal = EdgeDecals.at(edge);
+                    auto decal = NeighbourDecals[edge];
 
                     auto neighbourDecal = v.id;
                     neighbourDecal.x += decal.x;
@@ -419,11 +554,358 @@ namespace bsoid
                     {
                         continue;
                     }
-
                     frontier.push(neighbourDecal);
                 }
+#else
+                tbb::parallel_for(static_cast<std::size_t>(0), edges.size(),
+                    [v, &frontier, &frontierMutex, edges, this](std::size_t i)
+                {
+                    auto decal = NeighbourDecals[edges[i]];
+
+                    auto neighbourDecal = v.id;
+                    neighbourDecal.x += decal.x;
+                    neighbourDecal.y += decal.y;
+                    neighbourDecal.z += decal.z;
+
+                    if (!validVoxel(Voxel(neighbourDecal)))
+                    {
+                        return;
+                    }
+
+                    {
+                        std::lock_guard<std::mutex> lock(frontierMutex);
+                        frontier.push(neighbourDecal);
+                    }
+                });
+#endif
+
                 mVoxels.push_back(v);
             }
+        }
+
+        void Bsoid::makeTriangles()
+        {
+            using atlas::math::Point;
+            using atlas::math::Normal;
+
+            // Iterate over the set of voxels.
+            std::map<std::uint128_t, std::uint32_t> indexMap;
+
+
+#if (DISABLE_PARALLEL)
+            for (auto& voxel : mVoxels)
+            {
+                std::uint32_t voxelIndex = 0;
+                std::vector<std::uint32_t> coeffs =
+                { 1, 2, 4, 8, 16, 32, 64, 128 };
+                for (std::size_t i = 0; i < voxel.points.size(); ++i)
+                {
+                    voxelIndex |= (voxel.points[i].value.w < mMagic) ?
+                        coeffs[i] : 0;
+                }
+
+                if (EdgeTable[voxelIndex] == 0)
+                {
+                    continue;
+                }
+
+                std::vector<LinePoint> vertList(12);
+                if (EdgeTable[voxelIndex] & 1)
+                {
+                    vertList[0] = generateLinePoint(
+                        voxel.id + VoxelDecals[0],
+                        voxel.id + VoxelDecals[1],
+                        voxel.points[0],
+                        voxel.points[1]);
+                }
+
+                if (EdgeTable[voxelIndex] & 2)
+                {
+                    vertList[1] = generateLinePoint(
+                        voxel.id + VoxelDecals[1],
+                        voxel.id + VoxelDecals[2],
+                        voxel.points[1],
+                        voxel.points[2]);
+                }
+
+                if (EdgeTable[voxelIndex] & 4)
+                {
+                    vertList[2] = generateLinePoint(
+                        voxel.id + VoxelDecals[2],
+                        voxel.id + VoxelDecals[3],
+                        voxel.points[2],
+                        voxel.points[3]);
+                }
+
+                if (EdgeTable[voxelIndex] & 8)
+                {
+                    vertList[3] = generateLinePoint(
+                        voxel.id + VoxelDecals[3],
+                        voxel.id + VoxelDecals[0],
+                        voxel.points[3],
+                        voxel.points[0]);
+                }
+
+                if (EdgeTable[voxelIndex] & 16)
+                {
+                    vertList[4] = generateLinePoint(
+                        voxel.id + VoxelDecals[4],
+                        voxel.id + VoxelDecals[5],
+                        voxel.points[4],
+                        voxel.points[5]);
+                }
+
+                if (EdgeTable[voxelIndex] & 32)
+                {
+                    vertList[5] = generateLinePoint(
+                        voxel.id + VoxelDecals[5],
+                        voxel.id + VoxelDecals[6],
+                        voxel.points[5],
+                        voxel.points[6]);
+                }
+
+                if (EdgeTable[voxelIndex] & 64)
+                {
+                    vertList[6] = generateLinePoint(
+                        voxel.id + VoxelDecals[6],
+                        voxel.id + VoxelDecals[7],
+                        voxel.points[6],
+                        voxel.points[7]);
+                }
+
+                if (EdgeTable[voxelIndex] & 128)
+                {
+                    vertList[7] = generateLinePoint(
+                        voxel.id + VoxelDecals[7],
+                        voxel.id + VoxelDecals[4],
+                        voxel.points[7],
+                        voxel.points[4]);
+                }
+
+                if (EdgeTable[voxelIndex] & 256)
+                {
+                    vertList[8] = generateLinePoint(
+                        voxel.id + VoxelDecals[0],
+                        voxel.id + VoxelDecals[4],
+                        voxel.points[0],
+                        voxel.points[4]);
+                }
+
+                if (EdgeTable[voxelIndex] & 512)
+                {
+                    vertList[9] = generateLinePoint(
+                        voxel.id + VoxelDecals[1],
+                        voxel.id + VoxelDecals[5],
+                        voxel.points[1],
+                        voxel.points[5]);
+                }
+
+                if (EdgeTable[voxelIndex] & 1024)
+                {
+                    vertList[10] = generateLinePoint(
+                        voxel.id + VoxelDecals[2],
+                        voxel.id + VoxelDecals[6],
+                        voxel.points[2],
+                        voxel.points[6]);
+                }
+
+                if (EdgeTable[voxelIndex] & 2048)
+                {
+                    vertList[11] = generateLinePoint(
+                        voxel.id + VoxelDecals[3],
+                        voxel.id + VoxelDecals[7],
+                        voxel.points[3],
+                        voxel.points[7]);
+                }
+
+                for (int i = 0; TriangleTable[voxelIndex][i] != -1; i += 3)
+                {
+                    std::vector<LinePoint> pts;
+                    pts.push_back(vertList[TriangleTable[voxelIndex][i + 0]]);
+                    pts.push_back(vertList[TriangleTable[voxelIndex][i + 1]]);
+                    pts.push_back(vertList[TriangleTable[voxelIndex][i + 2]]);
+
+                    for (auto& pt : pts)
+                    {
+                        // Check if we have seen this point before.
+                        auto entry = indexMap.find(pt.edge);
+                        if (entry != indexMap.end())
+                        {
+                            // We have, so just insert the index.
+                            mMesh.indices().push_back((*entry).second);
+                        }
+                        else
+                        {
+                            // We haven't, so insert it.
+                            mMesh.vertices().push_back(pt.point.value.xyz());
+                            mMesh.normals().push_back(-pt.point.g);
+                            mMesh.indices().push_back(mMesh.vertices().size() - 1);
+                            indexMap.insert(
+                                std::pair<std::uint128_t, std::uint32_t>(pt.edge,
+                                    mMesh.vertices().size() - 1));
+                        }
+                    }
+                }
+
+            }
+#else
+            std::mutex indexMapMutex;
+            auto loop = [&indexMap, &indexMapMutex, this](std::size_t i)
+            {
+                Voxel& voxel = mVoxels[i];
+                std::uint32_t voxelIndex = 0;
+                std::vector<std::uint32_t> coeffs =
+                { 1, 2, 4, 8, 16, 32, 64, 128 };
+                for (std::size_t i = 0; i < voxel.points.size(); ++i)
+                {
+                    voxelIndex |= (voxel.points[i].value.w < mMagic) ?
+                        coeffs[i] : 0;
+                }
+
+                if (EdgeTable[voxelIndex] == 0)
+                {
+                    return;
+                }
+
+                std::vector<LinePoint> vertList(12);
+                if (EdgeTable[voxelIndex] & 1)
+                {
+                    vertList[0] = generateLinePoint(
+                        voxel.id + VoxelDecals[0],
+                        voxel.id + VoxelDecals[1],
+                        voxel.points[0],
+                        voxel.points[1]);
+                }
+
+                if (EdgeTable[voxelIndex] & 2)
+                {
+                    vertList[1] = generateLinePoint(
+                        voxel.id + VoxelDecals[1],
+                        voxel.id + VoxelDecals[2],
+                        voxel.points[1],
+                        voxel.points[2]);
+                }
+
+                if (EdgeTable[voxelIndex] & 4)
+                {
+                    vertList[2] = generateLinePoint(
+                        voxel.id + VoxelDecals[2],
+                        voxel.id + VoxelDecals[3],
+                        voxel.points[2],
+                        voxel.points[3]);
+                }
+
+                if (EdgeTable[voxelIndex] & 8)
+                {
+                    vertList[3] = generateLinePoint(
+                        voxel.id + VoxelDecals[3],
+                        voxel.id + VoxelDecals[0],
+                        voxel.points[3],
+                        voxel.points[0]);
+                }
+
+                if (EdgeTable[voxelIndex] & 16)
+                {
+                    vertList[4] = generateLinePoint(
+                        voxel.id + VoxelDecals[4],
+                        voxel.id + VoxelDecals[5],
+                        voxel.points[4],
+                        voxel.points[5]);
+                }
+
+                if (EdgeTable[voxelIndex] & 32)
+                {
+                    vertList[5] = generateLinePoint(
+                        voxel.id + VoxelDecals[5],
+                        voxel.id + VoxelDecals[6],
+                        voxel.points[5],
+                        voxel.points[6]);
+                }
+
+                if (EdgeTable[voxelIndex] & 64)
+                {
+                    vertList[6] = generateLinePoint(
+                        voxel.id + VoxelDecals[6],
+                        voxel.id + VoxelDecals[7],
+                        voxel.points[6],
+                        voxel.points[7]);
+                }
+
+                if (EdgeTable[voxelIndex] & 128)
+                {
+                    vertList[7] = generateLinePoint(
+                        voxel.id + VoxelDecals[7],
+                        voxel.id + VoxelDecals[4],
+                        voxel.points[7],
+                        voxel.points[4]);
+                }
+
+                if (EdgeTable[voxelIndex] & 256)
+                {
+                    vertList[8] = generateLinePoint(
+                        voxel.id + VoxelDecals[0],
+                        voxel.id + VoxelDecals[4],
+                        voxel.points[0],
+                        voxel.points[4]);
+                }
+
+                if (EdgeTable[voxelIndex] & 512)
+                {
+                    vertList[9] = generateLinePoint(
+                        voxel.id + VoxelDecals[1],
+                        voxel.id + VoxelDecals[5],
+                        voxel.points[1],
+                        voxel.points[5]);
+                }
+
+                if (EdgeTable[voxelIndex] & 1024)
+                {
+                    vertList[10] = generateLinePoint(
+                        voxel.id + VoxelDecals[2],
+                        voxel.id + VoxelDecals[6],
+                        voxel.points[2],
+                        voxel.points[6]);
+                }
+
+                if (EdgeTable[voxelIndex] & 2048)
+                {
+                    vertList[11] = generateLinePoint(
+                        voxel.id + VoxelDecals[3],
+                        voxel.id + VoxelDecals[7],
+                        voxel.points[3],
+                        voxel.points[7]);
+                }
+
+                for (int i = 0; TriangleTable[voxelIndex][i] != -1; i += 3)
+                {
+                    std::vector<LinePoint> pts;
+                    pts.push_back(vertList[TriangleTable[voxelIndex][i + 0]]);
+                    pts.push_back(vertList[TriangleTable[voxelIndex][i + 1]]);
+                    pts.push_back(vertList[TriangleTable[voxelIndex][i + 2]]);
+
+                    std::lock_guard<std::mutex> lock(indexMapMutex);
+                    for (auto& pt : pts)
+                    {
+                        auto entry = indexMap.find(pt.edge);
+                        if (entry != indexMap.end())
+                        {
+                            mMesh.indices().push_back((*entry).second);
+                        }
+                        else
+                        {
+                            mMesh.vertices().push_back(pt.point.value.xyz());
+                            mMesh.normals().push_back(-pt.point.g);
+                            mMesh.indices().push_back(mMesh.vertices().size() - 1);
+                            indexMap.insert(
+                                std::pair<std::uint128_t, std::uint32_t>(
+                                    pt.edge, mMesh.vertices().size() - 1));
+                        }
+                    }
+                }
+            };
+
+            tbb::parallel_for(static_cast<std::size_t>(0), mVoxels.size(), loop);
+#endif
         }
 
         bool Bsoid::validVoxel(Voxel const& v)
@@ -433,6 +915,20 @@ namespace bsoid
                 v.id.x < mGridSize &&
                 v.id.y < mGridSize &&
                 v.id.z < mGridSize);
+        }
+
+        void Bsoid::validateVoxels()
+        {
+            std::map<std::uint64_t, Voxel> seenMap;
+            for (auto& voxel : mVoxels)
+            {
+                auto hash = BsoidHash64::hash(voxel.id.x, voxel.id.y, voxel.id.z);
+                seenMap.insert(std::pair<std::uint64_t, Voxel>(hash, voxel));
+            }
+
+            ATLAS_ASSERT(seenMap.size() == mVoxels.size(),
+                "There should be no repeated voxels in the lattice.");
+            DEBUG_LOG("Voxel validation succeeded.");
         }
 
     }

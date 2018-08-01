@@ -1,14 +1,13 @@
-#ifndef ATHENA_INCLUDE_ATHENA_VISUALIZER_MODEL_VISUALIZER_HPP
-#define ATHENA_INCLUDE_ATHENA_VISUALIZER_MODEL_VISUALIZER_HPP
+#ifndef BSOID_INCLUDE_BSOID_VISUALIZER_MODEL_VISUALIZER_HPP
+#define BSOID_INCLUDE_BSOID_VISUALIZER_MODEL_VISUALIZER_HPP
 
 #pragma once
 
 #include "ModelView.hpp"
-#include "FieldView.hpp"
 
 #include <atlas/tools/ModellingScene.hpp>
 
-namespace athena
+namespace bsoid
 {
     namespace visualizer
     {
@@ -23,7 +22,6 @@ namespace athena
         private:
             void takeSnapshot(std::string const& name);
             std::vector<ModelView> mViews;
-            std::vector<FieldView> mFieldViews;
             int mCurrentView;
         };
     }

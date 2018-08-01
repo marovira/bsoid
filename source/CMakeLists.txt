@@ -5,7 +5,7 @@ set(BSOID_SOURCE_TOP_LIST
 add_subdirectory("${BSOID_SOURCE_ROOT}/bsoid/tree")
 add_subdirectory("${BSOID_SOURCE_ROOT}/bsoid/polygonizer")
 add_subdirectory("${BSOID_SOURCE_ROOT}/bsoid/visualizer")
-#add_subdirectory("${BSOID_SOURCE_ROOT}/bsoid/models")
+add_subdirectory("${BSOID_SOURCE_ROOT}/bsoid/models")
 
 set(BSOID_SOURCE_TOP_GROUP ${BSOID_SOURCE_TOP_LIST} PARENT_SCOPE)
 set(BSOID_SOURCE_TREE_GROUP ${BSOID_SOURCE_TREE_LIST} PARENT_SCOPE)

@@ -1,6 +1,6 @@
-#include "athena/visualizer/ModelView.hpp"
-#include "athena/ShaderPaths.hpp"
-#include "athena/global/LayoutLocations.glsl"
+#include "bsoid/visualizer/ModelView.hpp"
+#include "bsoid/ShaderPaths.hpp"
+#include "bsoid/global/LayoutLocations.glsl"
 
 #include <atlas/utils/GUI.hpp>
 #include <atlas/core/Enum.hpp>
@@ -12,14 +12,13 @@
 enum class ShaderNames : int
 {
     Lattice = 0,
-    Contour,
     Mesh
 };
 
 namespace gl = atlas::gl;
 namespace math = atlas::math;
 
-namespace athena
+namespace bsoid
 {
     namespace visualizer
     {
@@ -28,10 +27,6 @@ namespace athena
             mLatticeData(GL_ARRAY_BUFFER),
             mLatticeIndices(GL_ELEMENT_ARRAY_BUFFER),
             mLatticeNumIndices(0),
-            mContourData(GL_ARRAY_BUFFER),
-            mContourIndices(GL_ELEMENT_ARRAY_BUFFER),
-            mContourNumIndices(0),
-            mContourNumVertices(0),
             mMeshData(GL_ARRAY_BUFFER),
             mMeshIndices(GL_ELEMENT_ARRAY_BUFFER),
             mMeshNumIndices(0),
@@ -39,7 +34,6 @@ namespace athena
             mMCIndices(GL_ELEMENT_ARRAY_BUFFER),
             mMCNumIndices(0),
             mShowLattices(false),
-            mShowContours(false),
             mShowMesh(false),
             mShowMCMesh(false),
             mHasMC(false),
@@ -56,10 +50,6 @@ namespace athena
             mLatticeData(GL_ARRAY_BUFFER),
             mLatticeIndices(GL_ELEMENT_ARRAY_BUFFER),
             mLatticeNumIndices(0),
-            mContourData(GL_ARRAY_BUFFER),
-            mContourIndices(GL_ELEMENT_ARRAY_BUFFER),
-            mContourNumIndices(0),
-            mContourNumVertices(0),
             mMeshData(GL_ARRAY_BUFFER),
             mMeshIndices(GL_ELEMENT_ARRAY_BUFFER),
             mMeshNumIndices(0),
@@ -67,7 +57,6 @@ namespace athena
             mMCIndices(GL_ELEMENT_ARRAY_BUFFER),
             mMCNumIndices(0),
             mShowLattices(false),
-            mShowContours(false),
             mShowMesh(false),
             mShowMCMesh(false),
             mHasMC(true),
@@ -111,59 +100,13 @@ namespace athena
                 }
                 else
                 {
-                    auto index = mSelectedSlice - 1;
-                    auto offset = mSoid.getLattice().offsets[index];
-                    glDrawElements(GL_LINES, (GLsizei)offset.second,
-                        GL_UNSIGNED_INT, gl::bufferOffset<GLuint>(offset.first));
+                    glDrawElements(GL_LINES, (GLsizei)mLatticeNumIndices,
+                        GL_UNSIGNED_INT, gl::bufferOffset<GLuint>(0));
                 }
                 mLatticeIndices.unBindBuffer();
                 mLatticeVao.unBindVertexArray();
 
                 mShaders[latticeIndex].disableShaders();
-            }
-
-            if (mShowContours)
-            {
-                auto contourIndex = enumToUnderlyingType(ShaderNames::Contour);
-                mShaders[contourIndex].enableShaders();
-                auto var = mUniforms["contour_renderMode"];
-
-                glUniformMatrix4fv(mUniforms["contour_model"], 1, GL_FALSE,
-                    &mModel[0][0]);
-
-                mContourVao.bindVertexArray();
-                mContourIndices.bindBuffer();
-
-                // First draw the vertices.
-                glUniform1i(var, 0);
-                if (mSelectedSlice == 0)
-                {
-                    glDrawArrays(GL_POINTS, 0, mContourNumVertices);
-                }
-                else
-                {
-                    auto index = mSelectedSlice - 1;
-                    auto offset = mSoid.getContour().vertexOffsets[index];
-                    glDrawArrays(GL_POINTS, offset.first, offset.second);
-                }
-
-                // Now draw the actual contours.
-                glUniform1i(var, 1);
-                if (mSelectedSlice == 0)
-                {
-                    glDrawElements(GL_LINES, (GLsizei)mContourNumIndices,
-                        GL_UNSIGNED_INT, gl::bufferOffset<GLuint>(0));
-                }
-                else
-                {
-                    auto index = mSelectedSlice - 1;
-                    auto offset = mSoid.getContour().indexOffsets[index];
-                    glDrawElements(GL_LINES, (GLsizei)offset.second,
-                        GL_UNSIGNED_INT, gl::bufferOffset<GLuint>(offset.first));
-                }
-
-                mContourIndices.unBindBuffer();
-                mContourVao.unBindVertexArray();
             }
 
             if (mShowMesh)
@@ -173,38 +116,11 @@ namespace athena
 
                 if (mRenderMode == 0)
                 {
-                    auto contourIndex = enumToUnderlyingType(ShaderNames::Contour);
-                    mShaders[contourIndex].enableShaders();
-                    auto var = mUniforms["contour_renderMode"];
-
-                    glUniformMatrix4fv(mUniforms["contour_model"], 1,
-                        GL_FALSE, &mModel[0][0]);
-
-                    // Draw only vertices.
-                    glUniform1i(var, 0);
-                    glDrawArrays(GL_POINTS, 0, mMeshNumVertices);
-
-                    mShaders[contourIndex].disableShaders();
+                    // Vertices only.
                 }
                 else if (mRenderMode == 1)
                 {
                     // Wireframe.
-                    auto contourIndex = enumToUnderlyingType(ShaderNames::Contour);
-                    mShaders[contourIndex].enableShaders();
-                    auto var = mUniforms["contour_renderMode"];
-                    glUniformMatrix4fv(mUniforms["contour_model"], 1,
-                        GL_FALSE, &mModel[0][0]);
-
-                    glUniform1i(var, 0);
-                    glDrawArrays(GL_POINTS, 0, mMeshNumVertices);
-
-                    glUniform1i(var, 1);
-                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                    glDrawElements(GL_TRIANGLES, (GLsizei)mMeshNumIndices,
-                        GL_UNSIGNED_INT, gl::bufferOffset<GLuint>(0));
-                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-                    mShaders[contourIndex].disableShaders();
                 }
                 else
                 {
@@ -233,38 +149,11 @@ namespace athena
 
                 if (mRenderMode == 0)
                 {
-                    auto contourIndex = enumToUnderlyingType(ShaderNames::Contour);
-                    mShaders[contourIndex].enableShaders();
-                    auto var = mUniforms["contour_renderMode"];
-
-                    glUniformMatrix4fv(mUniforms["contour_model"], 1,
-                        GL_FALSE, &mModel[0][0]);
-
-                    // Draw only vertices.
-                    glUniform1i(var, 0);
-                    glDrawArrays(GL_POINTS, 0, mMCNumVertices);
-
-                    mShaders[contourIndex].disableShaders();
+                    // Ditto.
                 }
                 else if (mRenderMode == 1)
                 {
                     // Wireframe.
-                    auto contourIndex = enumToUnderlyingType(ShaderNames::Contour);
-                    mShaders[contourIndex].enableShaders();
-                    auto var = mUniforms["contour_renderMode"];
-                    glUniformMatrix4fv(mUniforms["contour_model"], 1,
-                        GL_FALSE, &mModel[0][0]);
-
-                    glUniform1i(var, 0);
-                    glDrawArrays(GL_POINTS, 0, mMCNumVertices);
-
-                    glUniform1i(var, 1);
-                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                    glDrawElements(GL_TRIANGLES, (GLsizei)mMCNumIndices,
-                        GL_UNSIGNED_INT, gl::bufferOffset<GLuint>(0));
-                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-                    mShaders[contourIndex].disableShaders();
                 }
                 else
                 {
@@ -292,35 +181,13 @@ namespace athena
             // Polygonizer controls window.
             ImGui::SetNextWindowSize(ImVec2(470, 400), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("Polygonizer Controls");
-            ImGui::Text("Cross-section controls");
-            {
-                std::vector<const char*> sliceNames;
-                std::vector<std::string> names;
-                names.push_back("All cross-sections");
-                for (std::size_t i = 0; i < mSoid.getNumSlices(); ++i)
-                {
-                    std::string s = "Cross-section " + std::to_string(i);
-                    names.push_back(s);
-                }
-
-                sliceNames.resize(names.size());
-                std::transform(names.begin(), names.end(), sliceNames.begin(),
-                    std::mem_fun_ref(&std::string::c_str));
-                ImGui::Combo("Cross-section", &mSelectedSlice, sliceNames.data(),
-                    ((int)sliceNames.size()));
-            }
 
             ImGui::Dummy(ImVec2(0, 10));
             ImGui::Text("Generation controls");
             ImGui::Separator();
-            if (ImGui::Button("Construct Cross-sections"))
+            if (ImGui::Button("Construct Lattice"))
             {
                 constructLattices();
-            }
-
-            if (ImGui::Button("Construct contours"))
-            {
-                constructContours();
             }
 
             if (ImGui::Button("Construct mesh"))
@@ -345,7 +212,6 @@ namespace athena
             ImGui::Text("Visualization Options");
             ImGui::Separator();
             ImGui::Checkbox("Show lattices", &mShowLattices);
-            ImGui::Checkbox("Show contours", &mShowContours);
             ImGui::Checkbox("Show mesh", &mShowMesh);
             ImGui::Checkbox("Show MC mesh", &mShowMCMesh);
 
@@ -377,33 +243,23 @@ namespace athena
             std::vector<gl::ShaderUnit> latticeShaders
             {
                 { std::string(ShaderDirectory) +
-                "athena/visualizer/Lattice.vs.glsl", GL_VERTEX_SHADER },
+                "bsoid/visualizer/Lattice.vs.glsl", GL_VERTEX_SHADER },
                 { std::string(ShaderDirectory) +
-                "athena/visualizer/Lattice.fs.glsl", GL_FRAGMENT_SHADER }
-            };
-
-            // Next the contour shaders.
-            std::vector<gl::ShaderUnit> contourShaders
-            {
-                { std::string(ShaderDirectory) +
-                "athena/visualizer/Contour.vs.glsl", GL_VERTEX_SHADER },
-                { std::string(ShaderDirectory) +
-                "athena/visualizer/Contour.fs.glsl", GL_FRAGMENT_SHADER}
+                "bsoid/visualizer/Lattice.fs.glsl", GL_FRAGMENT_SHADER }
             };
 
             // Finally the mesh shaders.
             std::vector<gl::ShaderUnit> meshShaders
             {
                 { std::string(ShaderDirectory) +
-                "athena/visualizer/Mesh.vs.glsl", GL_VERTEX_SHADER },
+                "bsoid/visualizer/Mesh.vs.glsl", GL_VERTEX_SHADER },
                 { std::string(ShaderDirectory) +
-                "athena/visualizer/Mesh.gs.glsl", GL_GEOMETRY_SHADER },
+                "bsoid/visualizer/Mesh.gs.glsl", GL_GEOMETRY_SHADER },
                 { std::string(ShaderDirectory) +
-                "athena/visualizer/Mesh.fs.glsl", GL_FRAGMENT_SHADER} 
+                "bsoid/visualizer/Mesh.fs.glsl", GL_FRAGMENT_SHADER} 
             };
 
             mShaders.push_back(gl::Shader(latticeShaders));
-            mShaders.push_back(gl::Shader(contourShaders));
             mShaders.push_back(gl::Shader(meshShaders));
 
             for (auto& shader : mShaders)
@@ -417,14 +273,6 @@ namespace athena
             auto latticeIndex = enumToUnderlyingType(ShaderNames::Lattice);
             auto var = mShaders[latticeIndex].getUniformVariable("model");
             mUniforms.insert(UniformKey("lattice_model", var));
-
-            // Now the contour uniforms.
-            auto contourIndex = enumToUnderlyingType(ShaderNames::Contour);
-            var = mShaders[contourIndex].getUniformVariable("model");
-            mUniforms.insert(UniformKey("contour_model", var));
-
-            var = mShaders[contourIndex].getUniformVariable("renderMode");
-            mUniforms.insert(UniformKey("contour_renderMode", var));
 
             // Finally the mesh uniforms.
             auto meshIndex = enumToUnderlyingType(ShaderNames::Mesh);
@@ -479,46 +327,6 @@ namespace athena
             mLatticeVao.unBindVertexArray();
         }
 
-        void ModelView::constructContours()
-        {
-            if (!mSoid.getContour().vertices.empty())
-            {
-                return;
-            }
-
-            namespace gl = atlas::gl;
-            namespace math = atlas::math;
-
-            mSoid.constructContours();
-
-            auto verts = mSoid.getContour().vertices;
-            auto idx = mSoid.getContour().indices;
-            mContourNumIndices = idx.size();
-            mContourNumVertices = verts.size();
-
-            if (mContourNumIndices == 0)
-            {
-             return;
-            }
-
-            mContourVao.bindVertexArray();
-            mContourData.bindBuffer();
-            mContourData.bufferData(
-             gl::size<math::Point>(verts.size()), verts.data(),
-             GL_STATIC_DRAW);
-            mContourData.vertexAttribPointer(VERTICES_LAYOUT_LOCATION, 3,
-             GL_FLOAT, GL_FALSE, 0, gl::bufferOffset<float>(0));
-            mContourVao.enableVertexAttribArray(VERTICES_LAYOUT_LOCATION);
-
-            mContourIndices.bindBuffer();
-            mContourIndices.bufferData(
-             gl::size<GLuint>(idx.size()), idx.data(), GL_STATIC_DRAW);
-
-            mContourIndices.unBindBuffer();
-            mContourData.unBindBuffer();
-            mContourVao.unBindVertexArray();
-        }
-
         void ModelView::constructMesh()
         {
             // Some condition here.
@@ -530,56 +338,6 @@ namespace athena
             // Update the contour buffers.
             std::vector<atlas::math::Point> verts;
             std::vector<std::uint32_t> idx;
-
-#if defined(ATLAS_DEBUG) && (ATHENA_DEBUG_CONTOURS)
-
-            verts = mSoid.getLattice().vertices;
-            idx = mSoid.getLattice().indices;
-
-            mLatticeNumIndices = idx.size();
-            if (mLatticeNumIndices == 0)
-            {
-                return;
-            }
-
-            mLatticeVao.bindVertexArray();
-            mLatticeData.bindBuffer();
-            mLatticeData.bufferData(
-                gl::size<math::Point>(verts.size()), verts.data(), 
-                GL_STATIC_DRAW);
-
-            mLatticeIndices.bindBuffer();
-            mLatticeIndices.bufferData(
-                gl::size<GLuint>(idx.size()), idx.data(), GL_STATIC_DRAW);
-
-            mLatticeIndices.unBindBuffer();
-            mLatticeData.unBindBuffer();
-            mLatticeVao.unBindVertexArray();
-
-            verts = mSoid.getContour().vertices;
-            idx = mSoid.getContour().indices;
-            mContourNumIndices = idx.size();
-            mContourNumVertices = verts.size();
-
-            if (mContourNumIndices == 0)
-            {
-                return;
-            }
-
-            mContourVao.bindVertexArray();
-            mContourData.bindBuffer();
-            mContourData.bufferData(
-             gl::size<math::Point>(verts.size()), verts.data(),
-             GL_STATIC_DRAW);
-
-            mContourIndices.bindBuffer();
-            mContourIndices.bufferData(
-             gl::size<GLuint>(idx.size()), idx.data(), GL_STATIC_DRAW);
-
-            mContourIndices.unBindBuffer();
-            mContourData.unBindBuffer();
-            mContourVao.unBindVertexArray();
-#endif
 
             // Now grab the mesh data.
             verts = mSoid.getMesh().vertices();

@@ -6,6 +6,7 @@
 #include "Polygonizer.hpp"
 #include "Lattice.hpp"
 #include "SuperVoxel.hpp"
+#include "uint128_t.hpp"
 #include "bsoid/tree/BlobTree.hpp"
 
 #include <atlas/utils/Mesh.hpp>
@@ -32,6 +33,7 @@ namespace bsoid
 
             void setModel(tree::BlobTree const& tree);
             void setIsoValue(float isoValue);
+            void setResolution(std::uint64_t gridRes, std::uint64_t svRes);
 
             tree::BlobTree* tree() const;
 
@@ -51,6 +53,27 @@ namespace bsoid
             void saveMesh();
 
         private:
+            struct LinePoint
+            {
+                LinePoint()
+                { }
+
+                LinePoint(FieldPoint const& p) : 
+                    point(p)
+                { }
+
+                LinePoint(FieldPoint const& p, std::uint128_t const& e) :
+                    point(p),
+                    edge(e)
+                { }
+
+                FieldPoint point;
+                std::uint128_t edge;
+            };
+
+            void makeVoxels();
+            void makeTriangles();
+
             atlas::math::Point createCellPoint(glm::u64vec3 const& p,
                 atlas::math::Point const& delta);
             atlas::math::Point createCellPoint(std::uint64_t x,
@@ -60,8 +83,14 @@ namespace bsoid
             void fillVoxel(Voxel& v);
             bool seenVoxel(VoxelId const& id);
 
+            FieldPoint interpolate(FieldPoint const& p1, FieldPoint const& p2);
+            LinePoint generateLinePoint(PointId const& p1, PointId const& p2,
+                FieldPoint const& fp1, FieldPoint const& fp2);
+
             void marchVoxelOnSurface(std::vector<Voxel> const& seeds);
             bool validVoxel(Voxel const& v);
+
+            void validateVoxels();
 
 
             atlas::math::Point mGridDelta, mSvDelta, mMin, mMax;
@@ -77,6 +106,9 @@ namespace bsoid
 
             std::mutex mSvMutex;
             std::unordered_map<std::uint64_t, SuperVoxel> mSuperVoxels;
+
+            std::mutex mPointMutex;
+            std::map<std::uint128_t, LinePoint> mComputedPoints;
 
             Lattice mLattice;
             tree::TreePointer mTree;

@@ -16,12 +16,11 @@ namespace bsoid
         {
             Lattice() = default;
 
-            void makeLattice(std::vector<std::vector<Voxel>> const& voxels);
+            void makeLattice(std::vector<Voxel> const& voxels);
             void clearBuffers();
 
             std::vector<atlas::math::Point> vertices;
             std::vector<std::uint32_t> indices;
-            std::vector<std::pair<std::uint32_t, std::uint32_t>> offsets;
         };
     }
 }

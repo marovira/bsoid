@@ -22,7 +22,7 @@ add_subdirectory("${BSOID_INCLUDE_ROOT}/bsoid/operators")
 add_subdirectory("${BSOID_INCLUDE_ROOT}/bsoid/tree")
 add_subdirectory("${BSOID_INCLUDE_ROOT}/bsoid/polygonizer")
 add_subdirectory("${BSOID_INCLUDE_ROOT}/bsoid/visualizer")
-#add_subdirectory("${BSOID_INCLUDE_ROOT}/bsoid/models")
+add_subdirectory("${BSOID_INCLUDE_ROOT}/bsoid/models")
 
 set(BSOID_INCLUDE_TOP_GROUP ${BSOID_INCLUDE_TOP_LIST} PARENT_SCOPE)
 set(BSOID_INCLUDE_FIELDS_GROUP ${BSOID_INCLUDE_FIELDS_LIST} PARENT_SCOPE)

@@ -1,17 +1,17 @@
-#ifndef ATHENA_INCLUDE_ATHENA_VISUALIZER_MODEL_VIEW_HPP
-#define ATHENA_INCLUDE_ATHENA_VISUALIZER_MODEL_VIEW_HPP
+#ifndef BSOID_INCLUDE_BSOID_VISUALIZER_MODEL_VIEW_HPP
+#define BSOID_INCLUDE_BSOID_VISUALIZER_MODEL_VIEW_HPP
 
 #pragma once
 
-#include "athena/polygonizer/Bsoid.hpp"
-#include "athena/polygonizer/MarchingCubes.hpp"
+#include "bsoid/polygonizer/Bsoid.hpp"
+#include "bsoid/polygonizer/MarchingCubes.hpp"
 
 #include <atlas/utils/Geometry.hpp>
 #include <atlas/utils/Mesh.hpp>
 #include <atlas/gl/Buffer.hpp>
 #include <atlas/gl/VertexArrayObject.hpp>
 
-namespace athena
+namespace bsoid
 {
     namespace visualizer
     {
@@ -31,7 +31,6 @@ namespace athena
         private:
             void initShaders();
             void constructLattices();
-            void constructContours();
             void constructMesh();
             void constructMCMesh();
 
@@ -42,12 +41,6 @@ namespace athena
             atlas::gl::Buffer mLatticeData;
             atlas::gl::Buffer mLatticeIndices;
             std::size_t mLatticeNumIndices;
-
-            atlas::gl::VertexArrayObject mContourVao;
-            atlas::gl::Buffer mContourData;
-            atlas::gl::Buffer mContourIndices;
-            std::size_t mContourNumIndices;
-            std::size_t mContourNumVertices;
 
             atlas::gl::VertexArrayObject mMeshVao;
             atlas::gl::Buffer mMeshData;
@@ -62,7 +55,6 @@ namespace athena
             std::size_t mMCNumVertices;
 
             bool mShowLattices;
-            bool mShowContours;
             bool mShowMesh;
             bool mShowMCMesh;
             bool mHasMC;

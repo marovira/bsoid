@@ -3,7 +3,7 @@
 
 #pragma once
 
-namespace athena
+namespace bsoid
 {
     constexpr const char ShaderDirectory[] = "@BSOID_SHADER_ROOT@/";
 }

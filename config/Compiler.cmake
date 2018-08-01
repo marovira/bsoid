@@ -43,6 +43,7 @@ if (WIN32)
             -wd3280
             -wd3346
             -wd1897
+            -wd1879
             -D_CRT_SECURE_NO_WARNINGS
             )
 

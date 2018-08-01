@@ -40,7 +40,7 @@ namespace bsoid
             { }
 
             FieldPoint(atlas::math::Point const& p, float v, 
-                atlas::math::Normal const& grad, std::uint32_t id) :
+                atlas::math::Normal const& grad, std::uint64_t id) :
                 value(p, v),
                 g(grad),
                 svHash(id)
@@ -58,7 +58,7 @@ namespace bsoid
 
             atlas::math::Point4 value;
             atlas::math::Normal g;
-            std::uint32_t svHash;
+            std::uint64_t svHash;
         };
 
         constexpr auto invalidUint()

@@ -7,7 +7,7 @@ namespace bsoid
 {
     namespace polygonizer
     {
-        void Lattice::makeLattice(std::vector<std::vector<Voxel>> const& voxels)
+        void Lattice::makeLattice(std::vector<Voxel> const& voxels)
         {
             using atlas::math::Point;
 
@@ -47,64 +47,73 @@ namespace bsoid
 
             clearBuffers();
 
-            for (auto& list : voxels)
+            std::vector<Point> verts;
+            std::vector<std::uint32_t> idxs;
+            std::uint32_t idxStart = 0;
+            for (auto& voxel : voxels)
             {
-                if (list.empty())
+                for (auto& pt : voxel.points)
                 {
-                    offsets.emplace_back(0, 0);
-                    continue;
+                    verts.push_back(pt.value.xyz());
                 }
 
-                std::vector<Point> verts;
-                std::vector<std::uint32_t> idxs;
-                std::uint32_t idxStart = 0;
-                for (auto& cell : list)
-                {
-                    for (auto& pt : cell.points)
-                    {
-                        verts.push_back(pt.value.xyz());
-                    }
+                idxs.push_back(idxStart + 0);
+                idxs.push_back(idxStart + 1);
 
-                    idxs.push_back(idxStart);
-                    idxs.push_back(idxStart + 1);
+                idxs.push_back(idxStart + 1);
+                idxs.push_back(idxStart + 2);
 
-                    idxs.push_back(idxStart + 1);
-                    idxs.push_back(idxStart + 2);
+                idxs.push_back(idxStart + 2);
+                idxs.push_back(idxStart + 3);
 
-                    idxs.push_back(idxStart + 2);
-                    idxs.push_back(idxStart + 3);
+                idxs.push_back(idxStart + 3);
+                idxs.push_back(idxStart + 0);
 
-                    idxs.push_back(idxStart + 3);
-                    idxs.push_back(idxStart);
-                    
-                    idxStart = static_cast<std::uint32_t>(verts.size());
-                }
+                idxs.push_back(idxStart + 4);
+                idxs.push_back(idxStart + 5);
+
+                idxs.push_back(idxStart + 5);
+                idxs.push_back(idxStart + 6);
+
+                idxs.push_back(idxStart + 6);
+                idxs.push_back(idxStart + 7);
+
+                idxs.push_back(idxStart + 7);
+                idxs.push_back(idxStart + 4);
+
+                idxs.push_back(idxStart + 0);
+                idxs.push_back(idxStart + 4);
+
+                idxs.push_back(idxStart + 1);
+                idxs.push_back(idxStart + 5);
+
+                idxs.push_back(idxStart + 2);
+                idxs.push_back(idxStart + 6);
                 
-                std::unordered_set<LatticePoint, LatticeHash> uniqueVertices;
-                std::uint32_t current = vertices.size();
-                std::uint32_t start = indices.size();
-                std::uint32_t size = 0;
-                for (auto& idx : idxs)
+                idxs.push_back(idxStart + 3);
+                idxs.push_back(idxStart + 7);
+
+                idxStart = static_cast<std::uint32_t>(verts.size());
+            }
+
+            std::unordered_set<LatticePoint, LatticeHash> uniqueVertices;
+            std::uint32_t current = vertices.size();
+            for (auto& idx : idxs)
+            {
+                auto pt = verts[idx];
+                if (uniqueVertices.find(pt) == uniqueVertices.end())
                 {
-                    auto pt = verts[idx];
-                    if (uniqueVertices.find(pt) == uniqueVertices.end())
-                    {
-                        indices.push_back(current);
-                        vertices.push_back(pt);
+                    indices.push_back(current);
+                    vertices.push_back(pt);
 
-                        uniqueVertices.emplace(pt, current);
-                        size++;
-                        current++;
-                    }
-                    else
-                    {
-                        auto uniqueV = *uniqueVertices.find(pt);
-                        indices.push_back(uniqueV.index);
-                        size++;
-                    }
+                    uniqueVertices.emplace(pt, current);
+                    current++;
                 }
-
-                offsets.emplace_back(start, size);
+                else
+                {
+                    auto uniqueV = *uniqueVertices.find(pt);
+                    indices.push_back(uniqueV.index);
+                }
             }
         }
 
@@ -112,7 +121,6 @@ namespace bsoid
         {
             vertices.clear();
             indices.clear();
-            offsets.clear();
         }
     }
 }

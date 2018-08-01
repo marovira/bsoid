@@ -1,6 +1,6 @@
 #version 450 core
 
-#include "athena/global/LayoutLocations.glsl"
+#include "bsoid/global/LayoutLocations.glsl"
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
 
@@ -20,7 +20,7 @@ out GeomData
     vec3 barycentric;
 } outData;
 
-#include "athena/global/UniformMatrices.glsl"
+#include "bsoid/global/UniformMatrices.glsl"
 
 const vec3 Light = vec3(0, 5, 0);
 

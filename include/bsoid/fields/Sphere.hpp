@@ -26,7 +26,9 @@ namespace bsoid
 
             std::vector<atlas::math::Point> getSeeds() const override
             {
-                return { mCentre };
+                auto seed = mCentre;
+                seed.x += mRadius;
+                return { seed };
             }
 
         private:

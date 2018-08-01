@@ -1,4 +1,4 @@
-#include "athena/visualizer/ModelVisualizer.hpp"
+#include "bsoid/visualizer/ModelVisualizer.hpp"
 
 #include <atlas/gl/GL.hpp>
 #include <atlas/utils/GUI.hpp>
@@ -14,7 +14,7 @@ namespace math = atlas::math;
 namespace utils = atlas::utils;
 namespace tools = atlas::tools;
 
-namespace athena
+namespace bsoid
 {
     namespace visualizer
     {
@@ -27,9 +27,6 @@ namespace athena
             {
                 for (auto&& model : models)
                 {
-                    mFieldViews.emplace_back(model.tree());
-                    mFieldViews.back().constructSlices(model.numCrossSections(),
-                        model.crossSectionDelta(), model.axis());
                     mViews.emplace_back(std::move(model));
                 }
             }
@@ -73,7 +70,6 @@ namespace athena
 
             // Now render the view.
             mViews[mCurrentView].renderGeometry();
-            mFieldViews[mCurrentView].renderGeometry();
 
             // Global HUD.
             ImGui::SetNextWindowSize(ImVec2(350, 140), ImGuiSetCond_FirstUseEver);
@@ -110,7 +106,6 @@ namespace athena
 
             // Render the GUI for the current view.
             mViews[mCurrentView].drawGui();
-            mFieldViews[mCurrentView].drawGui();
 
             ImGui::Render();
         }

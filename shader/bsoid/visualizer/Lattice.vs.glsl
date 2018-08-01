@@ -1,10 +1,10 @@
 #version 450 core
 
-#include "athena/global/LayoutLocations.glsl"
+#include "bsoid/global/LayoutLocations.glsl"
 
 layout(location = VERTICES_LAYOUT_LOCATION) in vec3 position;
 
-#include "athena/global/UniformMatrices.glsl"
+#include "bsoid/global/UniformMatrices.glsl"
 
 void main()
 {

@@ -12,6 +12,7 @@
 enum class ShaderNames : int
 {
     Lattice = 0,
+    Wireframe,
     Mesh
 };
 
@@ -116,11 +117,38 @@ namespace bsoid
 
                 if (mRenderMode == 0)
                 {
-                    // Vertices only.
+                    auto meshIndex = enumToUnderlyingType(ShaderNames::Wireframe);
+                    mShaders[meshIndex].enableShaders();
+                    auto var = mUniforms["wireframe_renderMode"];
+
+                    glUniformMatrix4fv(mUniforms["wireframe_model"], 1, GL_FALSE,
+                        &mModel[0][0]);
+
+
+                    glUniform1i(var, 0);
+                    glDrawArrays(GL_POINTS, 0, mMeshNumVertices);
+
+                    mShaders[meshIndex].disableShaders();
                 }
                 else if (mRenderMode == 1)
                 {
-                    // Wireframe.
+                    auto meshIndex = enumToUnderlyingType(ShaderNames::Wireframe);
+                    mShaders[meshIndex].enableShaders();
+                    auto var = mUniforms["wireframe_renderMode"];
+
+                    glUniformMatrix4fv(mUniforms["wireframe_model"], 1, GL_FALSE,
+                        &mModel[0][0]);
+
+                    glUniform1i(var, 0);
+                    glDrawArrays(GL_POINTS, 0, mMeshNumVertices);
+
+                    glUniform1i(var, 1);
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                    glDrawElements(GL_TRIANGLES, (GLsizei)mMeshNumIndices,
+                        GL_UNSIGNED_INT, gl::bufferOffset<GLuint>(0));
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+                    mShaders[meshIndex].disableShaders();
                 }
                 else
                 {
@@ -149,11 +177,38 @@ namespace bsoid
 
                 if (mRenderMode == 0)
                 {
-                    // Ditto.
+                    auto meshIndex = enumToUnderlyingType(ShaderNames::Mesh);
+                    mShaders[meshIndex].enableShaders();
+                    auto var = mUniforms["mesh_renderMode"];
+
+                    glUniformMatrix4fv(mUniforms["mesh_model"], 1, GL_FALSE,
+                        &mModel[0][0]);
+
+
+                    glUniform1i(var, 0);
+                    glDrawArrays(GL_POINTS, 0, mMCNumVertices);
+
+                    mShaders[meshIndex].disableShaders();
                 }
                 else if (mRenderMode == 1)
                 {
-                    // Wireframe.
+                    auto meshIndex = enumToUnderlyingType(ShaderNames::Mesh);
+                    mShaders[meshIndex].enableShaders();
+                    auto var = mUniforms["mesh_renderMode"];
+
+                    glUniformMatrix4fv(mUniforms["mesh_model"], 1, GL_FALSE,
+                        &mModel[0][0]);
+
+                    glUniform1i(var, 0);
+                    glDrawArrays(GL_POINTS, 0, mMCNumVertices);
+
+                    glUniform1i(var, 1);
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                    glDrawElements(GL_TRIANGLES, (GLsizei)mMCNumIndices,
+                        GL_UNSIGNED_INT, gl::bufferOffset<GLuint>(0));
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+                    mShaders[meshIndex].disableShaders();
                 }
                 else
                 {
@@ -248,6 +303,14 @@ namespace bsoid
                 "bsoid/visualizer/Lattice.fs.glsl", GL_FRAGMENT_SHADER }
             };
 
+            std::vector<gl::ShaderUnit> wireframeShaders
+            {
+                { std::string(ShaderDirectory) +
+                "bsoid/visualizer/Wireframe.vs.glsl", GL_VERTEX_SHADER },
+                { std::string(ShaderDirectory) +
+                "bsoid/visualizer/Wireframe.fs.glsl", GL_FRAGMENT_SHADER }
+            };
+
             // Finally the mesh shaders.
             std::vector<gl::ShaderUnit> meshShaders
             {
@@ -260,6 +323,7 @@ namespace bsoid
             };
 
             mShaders.push_back(gl::Shader(latticeShaders));
+            mShaders.push_back(gl::Shader(wireframeShaders));
             mShaders.push_back(gl::Shader(meshShaders));
 
             for (auto& shader : mShaders)
@@ -273,6 +337,12 @@ namespace bsoid
             auto latticeIndex = enumToUnderlyingType(ShaderNames::Lattice);
             auto var = mShaders[latticeIndex].getUniformVariable("model");
             mUniforms.insert(UniformKey("lattice_model", var));
+
+            auto wireframeIndex = enumToUnderlyingType(ShaderNames::Wireframe);
+            var = mShaders[wireframeIndex].getUniformVariable("model");
+            mUniforms.insert(UniformKey("wireframe_model", var));
+            var = mShaders[wireframeIndex].getUniformVariable("renderMode");
+            mUniforms.insert(UniformKey("wireframe_renderMode", var));
 
             // Finally the mesh uniforms.
             auto meshIndex = enumToUnderlyingType(ShaderNames::Mesh);

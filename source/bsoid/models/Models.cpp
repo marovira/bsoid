@@ -277,7 +277,7 @@ namespace bsoid
                 std::make_shared<Torus>();
             ImplicitOperatorPtr op = std::make_shared<Transform>(
                 glm::translate(Matrix4(1.0f), Vector(0.0f, 0.0f, 3.0f)) * 
-                glm::rotate(Matrix4(1.0f), glm::radians(45.0f), Vector(1, 0, 0)) * 
+                glm::rotate(Matrix4(1.0f), glm::radians(90.0f), Vector(1, 0, 0)) * 
                 glm::scale(Matrix4(1.0f), Vector(0.5f)) * 
                 glm::scale(Matrix4(1.0f), Vector(2.5f, 1.0f, 1.0f)));
             op->insertField(torus);
@@ -290,9 +290,143 @@ namespace bsoid
             MarchingCubes mc(tree, "transform");
             mc.setResolution(std::get<0>(currentResolution));
             return mc;
-
         }
 
+        polygonizer::Bsoid makeButterfly()
+        {
+            using atlas::math::Matrix4;
+            using atlas::math::Vector;
 
+            using fields::Torus;
+            using fields::Sphere;
+
+            using operators::Blend;
+            using operators::Transform;
+            using operators::Union;
+
+            // Base primitives.
+            ImplicitFieldPtr sphere = std::make_shared<Sphere>();
+            ImplicitFieldPtr torus = std::make_shared<Torus>();
+
+            // Butterfly body.
+            ImplicitOperatorPtr head = std::make_shared<Transform>(
+                glm::translate(Matrix4(1.0f), Vector(-1.0f, 0.0f, 0.0f)));
+            ImplicitOperatorPtr torso = std::make_shared<Transform>(
+                glm::translate(Matrix4(1.0f), Vector(1.0f, 0.0f, 0.0f)) *
+                glm::scale(Matrix4(1.0f), Vector(2.0f, 1.0f, 1.0f)));
+            ImplicitOperatorPtr tail = std::make_shared<Transform>(
+                glm::translate(Matrix4(1.0f), Vector(3.0f, 0.0f, 0.0f)) *
+                glm::scale(Matrix4(1.0f), Vector(4.0f, 1.0f, 1.0f)));
+
+            head->insertField(sphere);
+            torso->insertField(sphere);
+            tail->insertField(sphere);
+
+            ImplicitOperatorPtr body = std::make_shared<Union>();
+            body->insertFields({ head, torso, tail });
+
+            // Now make the wings.
+            ImplicitOperatorPtr topWing = std::make_shared<Transform>(
+                glm::translate(Matrix4(1.0f), Vector(0.0f, 0.0f, 3.0f)) *
+                glm::rotate(Matrix4(1.0f), glm::radians(90.0f), Vector(1, 0, 0)) *
+                glm::scale(Matrix4(1.0f), Vector(0.5f)) *
+                glm::scale(Matrix4(1.0f), Vector(2.5f, 1.0f, 1.0f)));
+            ImplicitOperatorPtr bottomWing = std::make_shared<Transform>(
+                glm::translate(Matrix4(1.0f), Vector(3.0f, 0.0f, 2.5f)) *
+                glm::rotate(Matrix4(1.0f), glm::radians(-90.0f), Vector(1, 0, 0)) *
+                glm::scale(Matrix4(1.0f), Vector(0.5f)) *
+                glm::scale(Matrix4(1.0f), Vector(2.0f, 1.0f, 1.0f)));
+
+            topWing->insertField(torus);
+            bottomWing->insertField(torus);
+
+            ImplicitOperatorPtr wingR = std::make_shared<Blend>();
+            wingR->insertFields({ topWing, bottomWing });
+
+            ImplicitOperatorPtr wingL = std::make_shared<Transform>(
+                glm::rotate(Matrix4(1.0f), glm::radians(180.0f), Vector(1, 0, 0)));
+            wingL->insertField(wingR);
+
+            ImplicitOperatorPtr butterfly = std::make_shared<Union>();
+            butterfly->insertFields({ body, wingR, wingL });
+
+            BlobTree tree;
+            tree.insertFields({ body, wingR, wingL, butterfly });
+            tree.insertNodeTree({ { -1 }, { -1 }, { -1 }, { 0, 1, 2 } });
+            tree.insertFieldTree(body);
+
+            Bsoid soid(tree, "butterfly");
+            soid.setResolution(std::get<0>(currentResolution),
+                std::get<1>(currentResolution));
+            return soid;
+        }
+
+        polygonizer::MarchingCubes makeMCButterfly()
+        {
+            using atlas::math::Matrix4;
+            using atlas::math::Vector;
+
+            using fields::Torus;
+            using fields::Sphere;
+
+            using operators::Blend;
+            using operators::Transform;
+            using operators::Union;
+
+            // Base primitives.
+            ImplicitFieldPtr sphere = std::make_shared<Sphere>();
+            ImplicitFieldPtr torus = std::make_shared<Torus>();
+
+            // Butterfly body.
+            ImplicitOperatorPtr head = std::make_shared<Transform>(
+                glm::translate(Matrix4(1.0f), Vector(-1.0f, 0.0f, 0.0f)));
+            ImplicitOperatorPtr torso = std::make_shared<Transform>(
+                glm::translate(Matrix4(1.0f), Vector(1.0f, 0.0f, 0.0f)) *
+                glm::scale(Matrix4(1.0f), Vector(2.0f, 1.0f, 1.0f)));
+            ImplicitOperatorPtr tail = std::make_shared<Transform>(
+                glm::translate(Matrix4(1.0f), Vector(3.0f, 0.0f, 0.0f)) *
+                glm::scale(Matrix4(1.0f), Vector(4.0f, 1.0f, 1.0f)));
+
+            head->insertField(sphere);
+            torso->insertField(sphere);
+            tail->insertField(sphere);
+
+            ImplicitOperatorPtr body = std::make_shared<Union>();
+            body->insertFields({ head, torso, tail });
+
+            // Now make the wings.
+            ImplicitOperatorPtr topWing = std::make_shared<Transform>(
+                glm::translate(Matrix4(1.0f), Vector(0.0f, 0.0f, 3.0f)) *
+                glm::rotate(Matrix4(1.0f), glm::radians(90.0f), Vector(1, 0, 0)) *
+                glm::scale(Matrix4(1.0f), Vector(0.5f)) *
+                glm::scale(Matrix4(1.0f), Vector(2.5f, 1.0f, 1.0f)));
+            ImplicitOperatorPtr bottomWing = std::make_shared<Transform>(
+                glm::translate(Matrix4(1.0f), Vector(3.0f, 0.0f, 2.5f)) *
+                glm::rotate(Matrix4(1.0f), glm::radians(-90.0f), Vector(1, 0, 0)) *
+                glm::scale(Matrix4(1.0f), Vector(0.5f)) *
+                glm::scale(Matrix4(1.0f), Vector(2.0f, 1.0f, 1.0f)));
+
+            topWing->insertField(torus);
+            bottomWing->insertField(torus);
+
+            ImplicitOperatorPtr wingR = std::make_shared<Blend>();
+            wingR->insertFields({ topWing, bottomWing });
+
+            ImplicitOperatorPtr wingL = std::make_shared<Transform>(
+                glm::rotate(Matrix4(1.0f), glm::radians(180.0f), Vector(1, 0, 0)));
+            wingL->insertField(wingR);
+
+            ImplicitOperatorPtr butterfly = std::make_shared<Union>();
+            butterfly->insertFields({ body, wingR, wingL });
+
+            BlobTree tree;
+            tree.insertFields({ body, wingR, wingL, butterfly });
+            tree.insertNodeTree({ { -1 }, { -1 }, { -1 }, { 0, 1, 2 } });
+            tree.insertFieldTree(body);
+
+            MarchingCubes mc(tree, "butterfly");
+            mc.setResolution(std::get<0>(currentResolution));
+            return mc;
+        }
     }
 }

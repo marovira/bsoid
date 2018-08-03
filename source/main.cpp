@@ -25,7 +25,9 @@ std::vector<bsoid::models::ModelFn> getModels()
     //result.push_back(makeBlend);
     //result.push_back(makeIntersection);
     //result.push_back(makeUnion);
-    result.push_back(makeTransform);
+    //result.push_back(makeTransform);
+
+    result.push_back(makeButterfly);
 
     return result;
 }

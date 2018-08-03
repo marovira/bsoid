@@ -27,6 +27,8 @@ namespace bsoid
         MAKE_FUNCTION(Union);
         MAKE_FUNCTION(Transform);
 
+        MAKE_FUNCTION(Butterfly);
+
     }
 }
 

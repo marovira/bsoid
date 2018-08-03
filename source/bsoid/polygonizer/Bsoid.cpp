@@ -17,7 +17,7 @@
 #include <tbb/parallel_for.h>
 #include <glm/gtx/component_wise.hpp>
 
-#define DISABLE_PARALLEL 1
+#define DISABLE_PARALLEL 0
 
 
 namespace bsoid
@@ -516,6 +516,7 @@ namespace bsoid
                         }
                     }
                     frontier.push(v.id);
+                    ++i;
                 }
 #else
                 tbb::parallel_for(static_cast<std::size_t>(0), seeds.size(),

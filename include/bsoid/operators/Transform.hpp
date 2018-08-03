@@ -18,7 +18,8 @@ namespace bsoid
 
             Transform(atlas::math::Matrix4 t) :
                 mTransform(t),
-                mInverse(glm::inverse(t))
+                mInverse(glm::inverse(t)),
+                mInverseT(glm::transpose(mInverse))
             { }
 
             ~Transform() = default;
@@ -55,7 +56,7 @@ namespace bsoid
 
                 Point q = Point(mInverse * Point4(p, 1.0f));
                 auto grad = mFields.front()->grad(q);
-                return Point(mTransform * Point4(grad, 0.0f));
+                return Point(Point4(grad, 1.0f) * mInverseT);
             }
             
             atlas::utils::BBox box() const override
@@ -91,7 +92,7 @@ namespace bsoid
                 return new Transform;
             }
 
-            atlas::math::Matrix4 mTransform, mInverse;
+            atlas::math::Matrix4 mTransform, mInverse, mInverseT;
         };
     }
 }

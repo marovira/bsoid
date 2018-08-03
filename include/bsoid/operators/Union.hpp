@@ -34,7 +34,7 @@ namespace bsoid
         private:
             float sdf(atlas::math::Point const& p) const override
             {
-                float field = 0.0f;
+                float field = -std::numeric_limits<float>::infinity();
                 for (auto& f : mFields)
                 {
                     field = glm::max(field, f->eval(p));
@@ -45,7 +45,7 @@ namespace bsoid
 
             atlas::math::Normal sdg(atlas::math::Point const& p) const override
             {
-                atlas::math::Normal gradient;
+                atlas::math::Normal gradient(-std::numeric_limits<float>::infinity());
                 for (auto& f : mFields)
                 {
                     gradient = glm::max(gradient, f->grad(p));

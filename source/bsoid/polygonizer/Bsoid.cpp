@@ -17,7 +17,7 @@
 #include <tbb/parallel_for.h>
 #include <glm/gtx/component_wise.hpp>
 
-#define DISABLE_PARALLEL 0
+#define DISABLE_PARALLEL 1
 
 
 namespace bsoid
@@ -162,6 +162,30 @@ namespace bsoid
             atlas::core::Timer<float> global;
             atlas::core::Timer<float> t;
 
+#if (DISABLE_PARALLEL)
+            for (std::size_t x = 0; x < mSvSize; ++x)
+            {
+                for (std::size_t y = 0; y < mSvSize; ++y)
+                {
+                    for (std::size_t z = 0; z < mSvSize; ++z)
+                    {
+                        auto pt = createCellPoint(x, y, z, mSvDelta);
+                        BBox cell(pt, pt + mSvDelta);
+
+                        SuperVoxel sv;
+                        sv.field = mTree->getSubTree(cell);
+                        sv.id = { x, y, z };
+
+                        if (sv.field)
+                        {
+                            auto idx = BsoidHash64::hash(x, y, z);
+                            mSuperVoxels.insert({ idx, sv });
+                        }
+                    }
+                }
+            }
+
+#else
             // First construct the grid of super-voxels.
             tbb::parallel_for(static_cast<std::uint64_t>(0), mSvSize, 
                 [this](std::uint64_t x) {
@@ -175,18 +199,20 @@ namespace bsoid
 
                         SuperVoxel sv;
                         sv.field = mTree->getSubTree(cell);
-                        sv.id = {x, y, z};
+                        sv.id = { x, y, z };
 
                         if (sv.field)
                         {
                             // critical section.
                             std::lock_guard<std::mutex> lock(mSvMutex);
                             auto idx = BsoidHash64::hash(x, y, z);
-                            mSuperVoxels[idx] = sv;
+                            mSuperVoxels.insert({ idx, sv });
                         }
                     });
                 });
             });
+#endif
+
 
             // Now that we have the grid of super-voxels, we can grab the seeds
             // and convert them into voxels in parallel.
@@ -271,7 +297,7 @@ namespace bsoid
                 FieldPoint fp;
                 {
                     auto svHash = BsoidHash64::hash(svId.x, svId.y, svId.z);
-                    SuperVoxel sv = mSuperVoxels[svHash];
+                    SuperVoxel sv = mSuperVoxels.at(svHash);
                     auto val = sv.eval(pt);
                     auto g = sv.grad(pt);
                     fp = { pt, val, g, svHash };

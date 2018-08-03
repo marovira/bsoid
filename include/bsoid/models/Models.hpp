@@ -8,12 +8,9 @@
 
 #include <functional>
 
-#define MAKE_SOID_FUNCTION(name) \
-bsoid::polygonizer::Bsoid make##name()
-
-#define MAKE_MC_FUNCTION(name) \
+#define MAKE_FUNCTION(name) \
+bsoid::polygonizer::Bsoid make##name(); \
 bsoid::polygonizer::MarchingCubes makeMC##name()
-
 
 namespace bsoid
 {
@@ -22,13 +19,14 @@ namespace bsoid
         using ModelFn = std::function<bsoid::polygonizer::Bsoid()>;
         using MCModelFn = std::function<bsoid::polygonizer::MarchingCubes()>;
 
-        MAKE_SOID_FUNCTION(Sphere);
-        MAKE_SOID_FUNCTION(Peanut);
-        MAKE_SOID_FUNCTION(Torus);
+        MAKE_FUNCTION(Sphere);
+        MAKE_FUNCTION(Torus);
 
-        MAKE_MC_FUNCTION(Sphere);
-        MAKE_MC_FUNCTION(Peanut);
-        MAKE_MC_FUNCTION(Torus);
+        MAKE_FUNCTION(Blend);
+        MAKE_FUNCTION(Intersection);
+        MAKE_FUNCTION(Union);
+        MAKE_FUNCTION(Transform);
+
     }
 }
 

@@ -18,9 +18,14 @@ std::vector<bsoid::models::ModelFn> getModels()
     using namespace bsoid::models;
 
     std::vector<ModelFn> result;
-    result.push_back(makeSphere);
-    //result.push_back(makePeanut);
+
+    //result.push_back(makeSphere);
     //result.push_back(makeTorus);
+
+    //result.push_back(makeBlend);
+    //result.push_back(makeIntersection);
+    //result.push_back(makeUnion);
+    result.push_back(makeTransform);
 
     return result;
 }

@@ -14,6 +14,7 @@ namespace bsoid
     {
         class Intersection : public ImplicitOperator
         {
+        public:
             Intersection()
             { }
 

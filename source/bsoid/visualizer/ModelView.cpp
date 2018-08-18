@@ -177,11 +177,11 @@ namespace bsoid
 
                 if (mRenderMode == 0)
                 {
-                    auto meshIndex = enumToUnderlyingType(ShaderNames::Mesh);
+                    auto meshIndex = enumToUnderlyingType(ShaderNames::Wireframe);
                     mShaders[meshIndex].enableShaders();
-                    auto var = mUniforms["mesh_renderMode"];
+                    auto var = mUniforms["wireframe_renderMode"];
 
-                    glUniformMatrix4fv(mUniforms["mesh_model"], 1, GL_FALSE,
+                    glUniformMatrix4fv(mUniforms["wireframe_model"], 1, GL_FALSE,
                         &mModel[0][0]);
 
 
@@ -192,11 +192,11 @@ namespace bsoid
                 }
                 else if (mRenderMode == 1)
                 {
-                    auto meshIndex = enumToUnderlyingType(ShaderNames::Mesh);
+                    auto meshIndex = enumToUnderlyingType(ShaderNames::Wireframe);
                     mShaders[meshIndex].enableShaders();
-                    auto var = mUniforms["mesh_renderMode"];
+                    auto var = mUniforms["wireframe_renderMode"];
 
-                    glUniformMatrix4fv(mUniforms["mesh_model"], 1, GL_FALSE,
+                    glUniformMatrix4fv(mUniforms["wireframe_model"], 1, GL_FALSE,
                         &mModel[0][0]);
 
                     glUniform1i(var, 0);

@@ -28,9 +28,9 @@ namespace bsoid
 
         constexpr Resolution lowResolution = { 32, 8 };
         constexpr Resolution midResolution = { 512, 128 };
-        constexpr Resolution highResolution = { 2048, 512 };
+        constexpr Resolution highResolution = { 1024, 256 };
 
-        constexpr Resolution currentResolution = lowResolution;
+        constexpr Resolution currentResolution = highResolution;
 
         polygonizer::Bsoid makeSphere()
         {
@@ -41,6 +41,7 @@ namespace bsoid
             tree.insertField(sphere);
             tree.insertNodeTree({ { -1 } });
             tree.insertFieldTree(sphere);
+            tree.insertSkeletalField(sphere);
 
             Bsoid soid(tree, "sphere");
             soid.setResolution(std::get<0>(currentResolution),
@@ -57,6 +58,7 @@ namespace bsoid
             tree.insertField(sphere);
             tree.insertNodeTree({ { -1 } });
             tree.insertFieldTree(sphere);
+            tree.insertSkeletalField(sphere);
 
             MarchingCubes mc(tree, "sphere");
             mc.setResolution(std::get<0>(currentResolution));
@@ -73,6 +75,7 @@ namespace bsoid
             tree.insertField(torus);
             tree.insertNodeTree({ { -1 } });
             tree.insertFieldTree(torus);
+            tree.insertSkeletalField(torus);
 
             Bsoid soid(tree, "torus");
             soid.setResolution(std::get<0>(currentResolution),
@@ -90,6 +93,7 @@ namespace bsoid
             tree.insertField(torus);
             tree.insertNodeTree({ { -1 } });
             tree.insertFieldTree(torus);
+            tree.insertSkeletalField(torus);
 
             MarchingCubes mc(tree, "torus");
             mc.setResolution(std::get<0>(currentResolution));
@@ -113,6 +117,7 @@ namespace bsoid
             tree.insertFields({ sphere1, sphere2, blend });
             tree.insertNodeTree({ { -1 }, { -1 }, { 0, 1 } });
             tree.insertFieldTree(blend);
+            tree.insertSkeletalFields({ sphere1, sphere2 });
 
             Bsoid soid(tree, "blend");
             soid.setResolution(std::get<0>(currentResolution),
@@ -137,6 +142,7 @@ namespace bsoid
             tree.insertFields({ sphere1, sphere2, blend });
             tree.insertNodeTree({ { -1 }, { -1 }, { 0, 1 } });
             tree.insertFieldTree(blend);
+            tree.insertSkeletalFields({ sphere1, sphere2 });
 
             MarchingCubes mc(tree, "blend");
             mc.setResolution(std::get<0>(currentResolution));
@@ -161,6 +167,8 @@ namespace bsoid
             tree.insertFields({ sphere1, sphere2, intersection });
             tree.insertNodeTree({ { -1 }, { -1 }, { 0, 1 } });
             tree.insertFieldTree(intersection);
+            tree.insertSkeletalFields({ sphere1, sphere2 });
+
 
             Bsoid soid(tree, "intersection");
             soid.setResolution(std::get<0>(currentResolution),
@@ -185,6 +193,7 @@ namespace bsoid
             tree.insertFields({ sphere1, sphere2, intersection });
             tree.insertNodeTree({ { -1 }, { -1 }, { 0, 1 } });
             tree.insertFieldTree(intersection);
+            tree.insertSkeletalFields({ sphere1, sphere2 });
 
             MarchingCubes mc(tree, "intersection");
             mc.setResolution(std::get<0>(currentResolution));
@@ -209,6 +218,7 @@ namespace bsoid
             tree.insertFields({ sphere1, sphere2, op });
             tree.insertNodeTree({ { -1 }, { -1 }, { 0, 1 } });
             tree.insertFieldTree(op);
+            tree.insertSkeletalFields({ sphere1, sphere2 });
 
             Bsoid soid(tree, "union");
             soid.setResolution(std::get<0>(currentResolution),
@@ -233,6 +243,7 @@ namespace bsoid
             tree.insertFields({ sphere1, sphere2, op });
             tree.insertNodeTree({ { -1 }, { -1 }, { 0, 1 } });
             tree.insertFieldTree(op);
+            tree.insertSkeletalFields({ sphere1, sphere2 });
 
             MarchingCubes mc(tree, "union");
             mc.setResolution(std::get<0>(currentResolution));
@@ -259,6 +270,7 @@ namespace bsoid
             tree.insertFields({ op });
             tree.insertNodeTree({ { -1 } });
             tree.insertFieldTree(op);
+            tree.insertSkeletalField(torus);
 
             Bsoid soid(tree, "transform");
             soid.setResolution(std::get<0>(currentResolution),
@@ -286,6 +298,7 @@ namespace bsoid
             tree.insertFields({ op });
             tree.insertNodeTree({ { -1 } });
             tree.insertFieldTree(op);
+            tree.insertSkeletalField(torus);
 
             MarchingCubes mc(tree, "transform");
             mc.setResolution(std::get<0>(currentResolution));
@@ -328,12 +341,15 @@ namespace bsoid
             // Now make the wings.
             ImplicitOperatorPtr topWing = std::make_shared<Transform>(
                 glm::translate(Matrix4(1.0f), Vector(0.0f, 0.0f, 3.0f)) *
-                glm::rotate(Matrix4(1.0f), glm::radians(90.0f), Vector(1, 0, 0)) *
+                glm::rotate(Matrix4(1.0f), glm::radians(90.0f), Vector(1, 0, 0)) * 
+                glm::rotate(Matrix4(1.0f), glm::radians(45.0f), Vector(0, 0, -1)) * 
                 glm::scale(Matrix4(1.0f), Vector(0.5f)) *
                 glm::scale(Matrix4(1.0f), Vector(2.5f, 1.0f, 1.0f)));
+
             ImplicitOperatorPtr bottomWing = std::make_shared<Transform>(
                 glm::translate(Matrix4(1.0f), Vector(3.0f, 0.0f, 2.5f)) *
                 glm::rotate(Matrix4(1.0f), glm::radians(-90.0f), Vector(1, 0, 0)) *
+                glm::rotate(Matrix4(1.0f), glm::radians(-90.0f), Vector(0, 0, -1)) *
                 glm::scale(Matrix4(1.0f), Vector(0.5f)) *
                 glm::scale(Matrix4(1.0f), Vector(2.0f, 1.0f, 1.0f)));
 
@@ -353,7 +369,8 @@ namespace bsoid
             BlobTree tree;
             tree.insertFields({ body, wingR, wingL, butterfly });
             tree.insertNodeTree({ { -1 }, { -1 }, { -1 }, { 0, 1, 2 } });
-            tree.insertFieldTree(body);
+            tree.insertFieldTree(butterfly);
+            tree.insertSkeletalFields({ sphere, torus });
 
             Bsoid soid(tree, "butterfly");
             soid.setResolution(std::get<0>(currentResolution),
@@ -397,12 +414,15 @@ namespace bsoid
             // Now make the wings.
             ImplicitOperatorPtr topWing = std::make_shared<Transform>(
                 glm::translate(Matrix4(1.0f), Vector(0.0f, 0.0f, 3.0f)) *
-                glm::rotate(Matrix4(1.0f), glm::radians(90.0f), Vector(1, 0, 0)) *
+                glm::rotate(Matrix4(1.0f), glm::radians(90.0f), Vector(1, 0, 0)) * 
+                glm::rotate(Matrix4(1.0f), glm::radians(45.0f), Vector(0, 0, -1)) * 
                 glm::scale(Matrix4(1.0f), Vector(0.5f)) *
                 glm::scale(Matrix4(1.0f), Vector(2.5f, 1.0f, 1.0f)));
+
             ImplicitOperatorPtr bottomWing = std::make_shared<Transform>(
                 glm::translate(Matrix4(1.0f), Vector(3.0f, 0.0f, 2.5f)) *
                 glm::rotate(Matrix4(1.0f), glm::radians(-90.0f), Vector(1, 0, 0)) *
+                glm::rotate(Matrix4(1.0f), glm::radians(-90.0f), Vector(0, 0, -1)) *
                 glm::scale(Matrix4(1.0f), Vector(0.5f)) *
                 glm::scale(Matrix4(1.0f), Vector(2.0f, 1.0f, 1.0f)));
 
@@ -422,7 +442,8 @@ namespace bsoid
             BlobTree tree;
             tree.insertFields({ body, wingR, wingL, butterfly });
             tree.insertNodeTree({ { -1 }, { -1 }, { -1 }, { 0, 1, 2 } });
-            tree.insertFieldTree(body);
+            tree.insertFieldTree(butterfly);
+            tree.insertSkeletalFields({ sphere, torus });
 
             MarchingCubes mc(tree, "butterfly");
             mc.setResolution(std::get<0>(currentResolution));

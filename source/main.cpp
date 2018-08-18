@@ -19,10 +19,10 @@ std::vector<bsoid::models::ModelFn> getModels()
 
     std::vector<ModelFn> result;
 
-    //result.push_back(makeSphere);
-    //result.push_back(makeTorus);
+    result.push_back(makeSphere);
+    result.push_back(makeTorus);
 
-    //result.push_back(makeBlend);
+    result.push_back(makeBlend);
     //result.push_back(makeIntersection);
     //result.push_back(makeUnion);
     //result.push_back(makeTransform);
@@ -37,9 +37,15 @@ std::vector<bsoid::models::MCModelFn> getMCModels()
     using namespace bsoid::models;
     
     std::vector<MCModelFn> result;
-    //result.push_back(makeMCSphere);
-    //result.push_back(makeMCPeanut);
-    //result.push_back(makeMCTorus);
+    result.push_back(makeMCSphere);
+    result.push_back(makeMCTorus);
+
+    result.push_back(makeMCBlend);
+    //result.push_back(makeMCIntersection);
+    //result.push_back(makeMCUnion);
+    //result.push_back(makeMCTransform);
+
+    result.push_back(makeMCButterfly);
 
     return result;
 }
@@ -97,6 +103,35 @@ int main()
 int main()
 {
     INFO_LOG_V("Welcome to Bsoid %s", BSOID_VERSION_STRING);
+
+    auto modelFns = getModels();
+    auto mcModelFns = getMCModels();
+
+    std::fstream file("summary.txt", std::fstream::out);
+
+    for (std::size_t i = 0; i < modelFns.size(); ++i)
+    {
+        {
+            auto soid = modelFns[i]();
+            INFO_LOG_V("Polygonizing model %s", soid.getName().c_str());
+            soid.polygonize();
+            std::string log = soid.getLog();
+            file << log;
+            soid.saveMesh();
+        }
+
+        INFO_LOG_V("Finished Bsoid, starting MC.");
+        {
+            auto mc = mcModelFns[i]();
+            mc.polygonize();
+            std::string log = mc.getLog();
+            file << "\n";
+            file << log;
+            mc.saveMesh();
+        }
+        
+        file << "\n\n";
+    }
 
     return 0;
 }

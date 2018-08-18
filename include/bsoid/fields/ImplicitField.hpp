@@ -10,6 +10,7 @@
 #include <atlas/utils/BBox.hpp>
 
 #include <vector>
+#include <atomic>
 
 namespace bsoid
 {
@@ -18,7 +19,8 @@ namespace bsoid
         class ImplicitField
         {
         public:
-            ImplicitField()
+            ImplicitField() :
+                mCounter(0)
             { }
 
             virtual ~ImplicitField() = default;
@@ -32,6 +34,7 @@ namespace bsoid
 
             virtual float eval(atlas::math::Point const& p) const
             {
+                ++mCounter;
                 return compactField(sdf(p));
             }
 
@@ -42,10 +45,18 @@ namespace bsoid
 
             virtual std::vector<atlas::math::Point> getSeeds() const = 0;
 
+            int getCount() const
+            {
+                return mCounter.load();
+            }
+
         protected:
             virtual float sdf(atlas::math::Point const& p) const = 0;
             virtual atlas::math::Normal sdg(atlas::math::Point const& p) const = 0;
             virtual atlas::utils::BBox box() const = 0;
+
+        private:
+            mutable std::atomic<std::uint64_t> mCounter;
         };
     }
 }

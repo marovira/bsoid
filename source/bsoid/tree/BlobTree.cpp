@@ -1,5 +1,7 @@
 #include "bsoid/tree/BlobTree.hpp"
 
+#include <sstream>
+
 namespace bsoid
 {
     namespace tree
@@ -18,6 +20,20 @@ namespace bsoid
             for (auto& field : fields)
             {
                 insertField(field);
+            }
+        }
+
+        void BlobTree::insertSkeletalField(fields::ImplicitFieldPtr const& field)
+        {
+            mSkeletalFields.push_back(field);
+        }
+
+        void BlobTree::insertSkeletalFields(
+            std::vector<fields::ImplicitFieldPtr> const& fields)
+        {
+            for (auto& field : fields)
+            {
+                insertSkeletalField(field);
             }
         }
 
@@ -81,6 +97,25 @@ namespace bsoid
         std::vector<atlas::math::Point> BlobTree::getSeeds() const
         {
             return mFieldTree->getSeeds();
+        }
+
+        std::string BlobTree::getFieldSummary() const
+        {
+            std::stringstream summary;
+            int total = 0;
+            int i = 0;
+            summary << "Field evaluation summary:\n";
+            summary << "#===========================#\n";
+            for (auto& field : mSkeletalFields)
+            {
+                summary << "Field " << std::to_string(i) << ": ";
+                summary << std::to_string(field->getCount()) << " evaluations.\n";
+                ++i;
+                total += field->getCount();
+            }
+            summary << "Total field evaluations: " << std::to_string(total);
+            summary << ".\n";
+            return summary.str();
         }
     }
 }

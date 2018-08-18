@@ -23,6 +23,10 @@ namespace bsoid
             void insertFields(
                 std::vector<fields::ImplicitFieldPtr> const& fields);
 
+            void insertSkeletalField(fields::ImplicitFieldPtr const& field);
+            void insertSkeletalFields(
+                std::vector<fields::ImplicitFieldPtr> const& fields);
+
             void insertNodeTree(std::vector<std::vector<int>> const& tree);
             void insertFieldTree(fields::ImplicitFieldPtr const& tree);
 
@@ -35,10 +39,13 @@ namespace bsoid
             atlas::utils::BBox getTreeBox() const;
             std::vector<atlas::math::Point> getSeeds() const;
 
+            std::string getFieldSummary() const;
+
         private:
             std::vector<NodePtr> mNodes;
             NodePtr mVolumeTree;
             fields::ImplicitFieldPtr mFieldTree;
+            std::vector<fields::ImplicitFieldPtr> mSkeletalFields;
         };
     }
 }

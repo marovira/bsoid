@@ -1,6 +1,7 @@
 #include "bsoid/polygonizer/MarchingCubes.hpp"
 
 #include <atlas/core/Timer.hpp>
+#include <atlas/core/Log.hpp>
 
 #include <cinttypes>
 #include <numeric>
@@ -331,8 +332,8 @@ namespace bsoid
         MarchingCubes::MarchingCubes(tree::BlobTree const& model,
             std::string const& name, float isoValue) :
             mTree(std::make_unique<tree::BlobTree>(model)),
-            mName(name),
-            mMagic(isoValue)
+            mMagic(isoValue),
+            mName(name)
         { }
 
         MarchingCubes::MarchingCubes(MarchingCubes&& mc) :
@@ -367,25 +368,32 @@ namespace bsoid
 
             Timer<float> global;
 
+            mLog << "Polygonizing model: " << mName << "\n";
+            mLog << "#===========================#\n";
+
             global.start();
 
             mLog << "Grid construction.\n";
             mLog << "#===========================#\n";
+            INFO_LOG("MC: Starting grid construction.");
             {
                 Timer<float> section;
                 section.start();
                 constructGrid();
                 mLog << "Constructed grid in " << section.elapsed() << " seconds\n";
             }
+            INFO_LOG("MC: Grid construction done.");
 
             mLog << "Triangle generation.\n";
             mLog << "#===========================#\n";
+            INFO_LOG("MC: Starting soup generation.");
             {
                 Timer<float> section;
                 section.start();
                 createTriangles();
                 mLog << "Generated triangles in " << section.elapsed() << " seconds\n";
             }
+            INFO_LOG("MC: Soup generation done.");
 
             Mesh::fromTriangleSoup(mVertices, mIndices, mMesh, mNormals);
 
@@ -393,6 +401,7 @@ namespace bsoid
             mLog << "#===========================#\n";
             mLog << "Total runtime: " << global.elapsed() << " seconds\n";
             mLog << "Total vertices generated: " << mMesh.vertices().size() << "\n";
+            mLog << mTree->getFieldSummary();
         }
 
         atlas::utils::Mesh& MarchingCubes::getMesh()
@@ -507,7 +516,7 @@ namespace bsoid
 
                         std::uint32_t voxelIndex = 0;
                         std::vector<std::uint32_t> coeffs =
-                        { 1, 2, 3, 8, 16, 32, 64, 128 };
+                        { 1, 2, 4, 8, 16, 32, 64, 128 };
                         for (std::size_t i = 0; i < 8; ++i)
                         {
                             voxelIndex |=

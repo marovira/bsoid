@@ -99,24 +99,38 @@ namespace bsoid
 
             Timer<float> global;
 
+            mLog << "Polygonizing model: " << mName << "\n";
+            mLog << "#===========================#\n";
+
             global.start();
             mLog << "Lattice generation.\n";
             mLog << "#===========================#\n";
+            INFO_LOG("Bsoid: Starting Lattice generation.");
             // Generate lattices.
             {
+                Timer<float> section;
+                section.start();
                 makeVoxels();
+                mLog << "Constructed lattice in " << section.elapsed() << " seconds\n";
             }
+            INFO_LOG("Bsoid: Lattice generation done.");
 
             mLog << "\nMesh generation.\n";
             mLog << "#===========================#\n";
+            INFO_LOG("Bsoid: Starting mesh generation.");
             {
+                Timer<float> section;
+                section.start();
                 constructMesh();
+                mLog << "Constructed mesh in " << section.elapsed() << " seconds\n";
             }
+            INFO_LOG("Bsoid: Mesh generation done.");
 
             mLog << "\nSummary:\n";
             mLog << "#===========================#\n";
             mLog << "Total runtime: " << global.elapsed() << " seconds\n";
             mLog << "Total vertices generated: " << mMesh.vertices().size() << "\n";
+            mLog << mTree->getFieldSummary();
         }
 
         Lattice const& Bsoid::getLattice() const

@@ -29,6 +29,8 @@ namespace bsoid
 
         MAKE_FUNCTION(Butterfly);
 
+        MAKE_FUNCTION(Particles);
+
     }
 }
 

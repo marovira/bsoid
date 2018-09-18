@@ -19,15 +19,16 @@ std::vector<bsoid::models::ModelFn> getModels()
 
     std::vector<ModelFn> result;
 
-    result.push_back(makeSphere);
-    result.push_back(makeTorus);
+    //result.push_back(makeSphere);
+    //result.push_back(makeTorus);
 
-    result.push_back(makeBlend);
+    //result.push_back(makeBlend);
     //result.push_back(makeIntersection);
     //result.push_back(makeUnion);
     //result.push_back(makeTransform);
 
-    result.push_back(makeButterfly);
+    //result.push_back(makeButterfly);
+    result.push_back(makeParticles);
 
     return result;
 }
@@ -37,15 +38,16 @@ std::vector<bsoid::models::MCModelFn> getMCModels()
     using namespace bsoid::models;
     
     std::vector<MCModelFn> result;
-    result.push_back(makeMCSphere);
-    result.push_back(makeMCTorus);
+    //result.push_back(makeMCSphere);
+    //result.push_back(makeMCTorus);
 
-    result.push_back(makeMCBlend);
+    //result.push_back(makeMCBlend);
     //result.push_back(makeMCIntersection);
     //result.push_back(makeMCUnion);
     //result.push_back(makeMCTransform);
 
-    result.push_back(makeMCButterfly);
+    //result.push_back(makeMCButterfly);
+    result.push_back(makeMCParticles);
 
     return result;
 }

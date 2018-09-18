@@ -11,7 +11,11 @@
 #include "bsoid/tree/BlobTree.hpp"
 #include "bsoid/polygonizer/Bsoid.hpp"
 
+#include <atlas/math/RandomGenerator.hpp>
+
 #include <tuple>
+#include <numeric>
+#include <chrono>
 
 namespace bsoid
 {
@@ -30,7 +34,7 @@ namespace bsoid
         constexpr Resolution midResolution = { 512, 128 };
         constexpr Resolution highResolution = { 1024, 256 };
 
-        constexpr Resolution currentResolution = highResolution;
+        constexpr Resolution currentResolution = lowResolution;
 
         polygonizer::Bsoid makeSphere()
         {
@@ -446,6 +450,96 @@ namespace bsoid
             tree.insertSkeletalFields({ sphere, torus });
 
             MarchingCubes mc(tree, "butterfly");
+            mc.setResolution(std::get<0>(currentResolution));
+            return mc;
+        }
+
+        bsoid::polygonizer::Bsoid makeParticles()
+        {
+            using atlas::math::Matrix4;
+            using atlas::math::Vector;
+
+            using fields::Sphere;
+            using operators::Blend;
+            using atlas::math::RandomGenerator;
+
+            auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+
+            RandomGenerator<float> random{ 2018 };
+            static constexpr auto numParticles = 100;
+            static constexpr auto maxVal = 10.0f;
+            static constexpr auto minVal = -10.0f;
+            std::vector<bsoid::fields::ImplicitFieldPtr> particles;
+            std::vector<std::vector<int>> nodes;
+            for (int i = 0; i < numParticles; ++i)
+            {
+                float x = random.getRandomReal(minVal, maxVal);
+                float y = random.getRandomReal(minVal, maxVal);
+                float z = random.getRandomReal(minVal, maxVal);
+
+                particles.emplace_back(std::make_shared<Sphere>(1.0f,
+                    Vector(x, y, z)));
+                nodes.push_back({ -1 });
+            }
+
+            ImplicitOperatorPtr blend = std::make_shared<Blend>();
+            blend->insertFields(particles);
+            std::vector<int> parent(nodes.size());
+            std::iota(parent.begin(), parent.end(), 0);
+            nodes.push_back(parent);
+            particles.push_back(blend);
+
+            BlobTree tree;
+            tree.insertFields(particles);
+            tree.insertNodeTree(nodes);
+            tree.insertFieldTree(blend);
+
+            Bsoid soid(tree, "particles");
+            soid.setResolution(std::get<0>(currentResolution), 
+                std::get<1>(currentResolution));
+            return soid;
+        }
+
+        bsoid::polygonizer::MarchingCubes makeMCParticles()
+        {
+            using atlas::math::Matrix4;
+            using atlas::math::Vector;
+
+            using fields::Sphere;
+            using operators::Blend;
+            using atlas::math::RandomGenerator;
+
+            auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+            RandomGenerator<float> random{ 2018 };
+            static constexpr auto numParticles = 100;
+            static constexpr auto maxVal = 10.0f;
+            static constexpr auto minVal = -10.0f;
+            std::vector<bsoid::fields::ImplicitFieldPtr> particles;
+            std::vector<std::vector<int>> nodes;
+            for (int i = 0; i < numParticles; ++i)
+            {
+                float x = random.getRandomReal(minVal, maxVal);
+                float y = random.getRandomReal(minVal, maxVal);
+                float z = random.getRandomReal(minVal, maxVal);
+
+                particles.emplace_back(std::make_shared<Sphere>(1.0f,
+                    Vector(x, y, z)));
+                nodes.push_back({ -1 });
+            }
+
+            ImplicitOperatorPtr blend = std::make_shared<Blend>();
+            blend->insertFields(particles);
+            std::vector<int> parent(nodes.size());
+            std::iota(parent.begin(), parent.end(), 0);
+            nodes.push_back(parent);
+            particles.push_back(blend);
+
+            BlobTree tree;
+            tree.insertFields(particles);
+            tree.insertNodeTree(nodes);
+            tree.insertFieldTree(blend);
+
+            MarchingCubes mc(tree, "particles");
             mc.setResolution(std::get<0>(currentResolution));
             return mc;
         }

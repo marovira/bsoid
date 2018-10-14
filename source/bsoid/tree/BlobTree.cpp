@@ -104,8 +104,6 @@ namespace bsoid
             std::stringstream summary;
             int total = 0;
             int i = 0;
-            summary << "Field evaluation summary:\n";
-            summary << "#===========================#\n";
             for (auto& field : mSkeletalFields)
             {
                 summary << "Field " << std::to_string(i) << ": ";

@@ -138,11 +138,11 @@ namespace bsoid
             int width = static_cast<int>(mWidth);
             int height = static_cast<int>(mHeight);
 
-            unsigned char* buffer = new unsigned char[width * height * 3];
-            glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer);
-            unsigned char* lastRow = buffer + (width * 3 * (height - 1));
-            if (!stbi_write_png(filename.c_str(), width, height, 3, lastRow,
-                -3 * width))
+            unsigned char* buffer = new unsigned char[width * height * 4];
+            glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+            unsigned char* lastRow = buffer + (width * 4 * (height - 1));
+            if (!stbi_write_png(filename.c_str(), width, height, 4, lastRow,
+                -4 * width))
             {
                 ERROR_LOG_V("Could not write image to %s", filename.c_str());
             }

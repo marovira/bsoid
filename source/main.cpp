@@ -12,40 +12,50 @@
 #include <atlas/tools/ModellingScene.hpp>
 
 #include <fstream>
+#include <chrono>
+#include <thread>
 
-std::vector<bsoid::models::ModelFn> getModels()
+
+std::vector<bsoid::models::ModelFn> getModels(
+    bsoid::models::Resolution const& res = bsoid::models::currentResolution)
 {
     using namespace bsoid::models;
 
     std::vector<ModelFn> result;
 
-    result.push_back(makeSphere);
-    result.push_back(makeTorus);
+    //result.push_back([res]() { return makeSphere(res); });
+    //result.push_back([res]() { return makeTorus(res); });
 
-    result.push_back(makeBlend);
-    //result.push_back(makeIntersection);
-    //result.push_back(makeUnion);
-    //result.push_back(makeTransform);
+    //result.push_back([res]() { return makeBlend(res); });
+    //result.push_back([res]() { return makeIntersection(res); });
+    //result.push_back([res]() { return makeUnion(res); });
+    //result.push_back([res]() { return makeTransform(res); });
 
-    result.push_back(makeButterfly);
+    //result.push_back([res]() { return makeButterfly(res); });
+
+    result.push_back([res]() { return makeParticles(res); });
 
     return result;
 }
 
-std::vector<bsoid::models::MCModelFn> getMCModels()
+std::vector<bsoid::models::MCModelFn> getMCModels(
+    bsoid::models::Resolution const& res = bsoid::models::currentResolution)
 {
     using namespace bsoid::models;
     
     std::vector<MCModelFn> result;
-    result.push_back(makeMCSphere);
-    result.push_back(makeMCTorus);
 
-    result.push_back(makeMCBlend);
-    //result.push_back(makeMCIntersection);
-    //result.push_back(makeMCUnion);
-    //result.push_back(makeMCTransform);
+    //result.push_back([res]() { return makeMCSphere(res); });
+    //result.push_back([res]() { return makeMCTorus(res); });
 
-    result.push_back(makeMCButterfly);
+    //result.push_back([res]() { return makeMCBlend(res); });
+    //result.push_back([res]() { return makeMCIntersection(res); });
+    //result.push_back([res]() { return makeMCUnion(res); });
+    //result.push_back([res]() { return makeMCTransform(res); });
+
+    //result.push_back([res]() { return makeMCButterfly(res); });
+
+    result.push_back([res]() {return makeMCParticles(res); });
 
     return result;
 }
@@ -104,33 +114,79 @@ int main()
 {
     INFO_LOG_V("Welcome to Bsoid %s", BSOID_VERSION_STRING);
 
-    auto modelFns = getModels();
-    auto mcModelFns = getMCModels();
+    constexpr auto TestMode = 0;
 
-    std::fstream file("summary.txt", std::fstream::out);
-
-    for (std::size_t i = 0; i < modelFns.size(); ++i)
+    if (TestMode == 0)
     {
+        std::fstream soidFile("bsoid_performance_summary.txt", 
+            std::fstream::out);
+        std::size_t res = 0;
+        for (std::size_t i = 0; i < 253; i++)
         {
-            auto soid = modelFns[i]();
-            INFO_LOG_V("Polygonizing model %s", soid.getName().c_str());
-            soid.polygonize();
-            std::string log = soid.getLog();
-            file << log;
-            soid.saveMesh();
+            res = 8 + (2 * i);
+            INFO_LOG_V("Starting Bsoid run %d.", (i + 1));
+            auto modelFns = getModels({ res, res / 4 });
+            for (auto& modelFn : modelFns)
+            {
+                auto soid = modelFn();
+                soid.polygonize();
+                std::string log = soid.getLog();
+                soidFile << log;
+                soidFile << "\n\n";
+            }
         }
+        soidFile.flush();
 
-        INFO_LOG_V("Finished Bsoid, starting MC.");
+        // Now run MC
+        res = 0;
+        std::fstream mcFile("mc_performance_summary.txt", std::fstream::out);
+        for (std::size_t i = 0; i < 253; i++)
         {
-            auto mc = mcModelFns[i]();
-            mc.polygonize();
-            std::string log = mc.getLog();
-            file << "\n";
-            file << log;
-            mc.saveMesh();
+            res = 8 + (2 * i);
+            INFO_LOG_V("Staring MC run %d.", (i + 1));
+            auto modelFns = getMCModels({ res, res / 4 });
+            for (auto& modelFn : modelFns)
+            {
+                auto mc = modelFn();
+                mc.polygonize();
+                std::string log = mc.getLog();
+                mcFile << log;
+                mcFile << "\n\n";
+            }
         }
-        
-        file << "\n\n";
+        mcFile.flush();
+    }
+    else
+    {
+        auto modelFns = getModels({ 178, 45 });
+        auto mcModelFns = getMCModels();
+
+        std::fstream file("summary.txt", std::fstream::out);
+
+        for (std::size_t i = 0; i < modelFns.size(); ++i)
+        {
+            {
+                auto soid = modelFns[i]();
+                INFO_LOG_V("Polygonizing model %s", soid.getName().c_str());
+                soid.polygonize();
+                std::string log = soid.getLog();
+                file << log;
+            }
+
+            //INFO_LOG_V("Finished Bsoid, starting MC.");
+            //{
+            //    auto mc = mcModelFns[i]();
+            //    mc.polygonize();
+            //    std::string log = mc.getLog();
+            //    file << "\n";
+            //    file << log;
+            //}
+            
+            file << "\n\n";
+            INFO_LOG("");
+            INFO_LOG("");
+
+        }
     }
 
     return 0;

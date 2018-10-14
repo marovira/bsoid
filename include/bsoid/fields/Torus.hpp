@@ -30,8 +30,8 @@ namespace bsoid
 
             std::vector<atlas::math::Point> getSeeds() const override
             {
-                auto pt = mCentre, p2 = mCentre;
-                pt.x += mC;
+                auto pt = mCentre;
+                pt.x += (mC - mA);
 
                 return { pt };
             }

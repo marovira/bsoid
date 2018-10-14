@@ -11,8 +11,6 @@
 #include "bsoid/tree/BlobTree.hpp"
 #include "bsoid/polygonizer/Bsoid.hpp"
 
-#include <tuple>
-
 namespace bsoid
 {
     namespace models
@@ -24,15 +22,7 @@ namespace bsoid
         using polygonizer::Bsoid;
         using polygonizer::MarchingCubes;
 
-        using Resolution = std::tuple<std::size_t, std::size_t>;
-
-        constexpr Resolution lowResolution = { 32, 8 };
-        constexpr Resolution midResolution = { 512, 128 };
-        constexpr Resolution highResolution = { 1024, 256 };
-
-        constexpr Resolution currentResolution = highResolution;
-
-        polygonizer::Bsoid makeSphere()
+        polygonizer::Bsoid makeSphere(Resolution const& res)
         {
             using fields::Sphere;
 
@@ -44,12 +34,12 @@ namespace bsoid
             tree.insertSkeletalField(sphere);
 
             Bsoid soid(tree, "sphere");
-            soid.setResolution(std::get<0>(currentResolution),
-                std::get<1>(currentResolution));
+            soid.setResolution(std::get<0>(res),
+                std::get<1>(res));
             return soid;
         }
 
-        polygonizer::MarchingCubes makeMCSphere()
+        polygonizer::MarchingCubes makeMCSphere(Resolution const& res)
         {
             using fields::Sphere;
 
@@ -61,11 +51,11 @@ namespace bsoid
             tree.insertSkeletalField(sphere);
 
             MarchingCubes mc(tree, "sphere");
-            mc.setResolution(std::get<0>(currentResolution));
+            mc.setResolution(std::get<0>(res));
             return mc;
         }
 
-        polygonizer::Bsoid makeTorus()
+        polygonizer::Bsoid makeTorus(Resolution const& res)
         {
             using atlas::math::Point;
             using fields::Torus;
@@ -78,12 +68,12 @@ namespace bsoid
             tree.insertSkeletalField(torus);
 
             Bsoid soid(tree, "torus");
-            soid.setResolution(std::get<0>(currentResolution),
-                std::get<1>(currentResolution));
+            soid.setResolution(std::get<0>(res),
+                std::get<1>(res));
             return soid;
         }
 
-        polygonizer::MarchingCubes makeMCTorus()
+        polygonizer::MarchingCubes makeMCTorus(Resolution const& res)
         {
             using atlas::math::Point;
             using fields::Torus;
@@ -96,11 +86,11 @@ namespace bsoid
             tree.insertSkeletalField(torus);
 
             MarchingCubes mc(tree, "torus");
-            mc.setResolution(std::get<0>(currentResolution));
+            mc.setResolution(std::get<0>(res));
             return mc;
         }
 
-        polygonizer::Bsoid makeBlend()
+        polygonizer::Bsoid makeBlend(Resolution const& res)
         {
             using atlas::math::Point;
             using fields::Sphere;
@@ -120,12 +110,12 @@ namespace bsoid
             tree.insertSkeletalFields({ sphere1, sphere2 });
 
             Bsoid soid(tree, "blend");
-            soid.setResolution(std::get<0>(currentResolution),
-                std::get<1>(currentResolution));
+            soid.setResolution(std::get<0>(res),
+                std::get<1>(res));
             return soid;
         }
 
-        polygonizer::MarchingCubes makeMCBlend()
+        polygonizer::MarchingCubes makeMCBlend(Resolution const& res)
         {
             using atlas::math::Point;
             using fields::Sphere;
@@ -145,12 +135,12 @@ namespace bsoid
             tree.insertSkeletalFields({ sphere1, sphere2 });
 
             MarchingCubes mc(tree, "blend");
-            mc.setResolution(std::get<0>(currentResolution));
+            mc.setResolution(std::get<0>(res));
 
             return mc;
         }
 
-        polygonizer::Bsoid makeIntersection()
+        polygonizer::Bsoid makeIntersection(Resolution const& res)
         {
             using atlas::math::Point;
             using fields::Sphere;
@@ -171,12 +161,12 @@ namespace bsoid
 
 
             Bsoid soid(tree, "intersection");
-            soid.setResolution(std::get<0>(currentResolution),
-                std::get<1>(currentResolution));
+            soid.setResolution(std::get<0>(res),
+                std::get<1>(res));
             return soid;
         }
 
-        polygonizer::MarchingCubes makeMCIntersection()
+        polygonizer::MarchingCubes makeMCIntersection(Resolution const& res)
         {
             using atlas::math::Point;
             using fields::Sphere;
@@ -196,12 +186,12 @@ namespace bsoid
             tree.insertSkeletalFields({ sphere1, sphere2 });
 
             MarchingCubes mc(tree, "intersection");
-            mc.setResolution(std::get<0>(currentResolution));
+            mc.setResolution(std::get<0>(res));
 
             return mc;
         }
 
-        polygonizer::Bsoid makeUnion()
+        polygonizer::Bsoid makeUnion(Resolution const& res)
         {
             using atlas::math::Point;
             using fields::Sphere;
@@ -221,12 +211,12 @@ namespace bsoid
             tree.insertSkeletalFields({ sphere1, sphere2 });
 
             Bsoid soid(tree, "union");
-            soid.setResolution(std::get<0>(currentResolution),
-                std::get<1>(currentResolution));
+            soid.setResolution(std::get<0>(res),
+                std::get<1>(res));
             return soid;
         }
 
-        polygonizer::MarchingCubes makeMCUnion()
+        polygonizer::MarchingCubes makeMCUnion(Resolution const& res)
         {
             using atlas::math::Point;
             using fields::Sphere;
@@ -246,11 +236,11 @@ namespace bsoid
             tree.insertSkeletalFields({ sphere1, sphere2 });
 
             MarchingCubes mc(tree, "union");
-            mc.setResolution(std::get<0>(currentResolution));
+            mc.setResolution(std::get<0>(res));
             return mc;
         }
 
-        polygonizer::Bsoid makeTransform()
+        polygonizer::Bsoid makeTransform(Resolution const& res)
         {
             using atlas::math::Matrix4;
             using atlas::math::Vector;
@@ -273,12 +263,12 @@ namespace bsoid
             tree.insertSkeletalField(torus);
 
             Bsoid soid(tree, "transform");
-            soid.setResolution(std::get<0>(currentResolution),
-                std::get<1>(currentResolution));
+            soid.setResolution(std::get<0>(res),
+                std::get<1>(res));
             return soid;
         }
 
-        polygonizer::MarchingCubes makeMCTransform()
+        polygonizer::MarchingCubes makeMCTransform(Resolution const& res)
         {
             using atlas::math::Matrix4;
             using atlas::math::Vector;
@@ -301,11 +291,11 @@ namespace bsoid
             tree.insertSkeletalField(torus);
 
             MarchingCubes mc(tree, "transform");
-            mc.setResolution(std::get<0>(currentResolution));
+            mc.setResolution(std::get<0>(res));
             return mc;
         }
 
-        polygonizer::Bsoid makeButterfly()
+        polygonizer::Bsoid makeButterfly(Resolution const& res)
         {
             using atlas::math::Matrix4;
             using atlas::math::Vector;
@@ -373,12 +363,12 @@ namespace bsoid
             tree.insertSkeletalFields({ sphere, torus });
 
             Bsoid soid(tree, "butterfly");
-            soid.setResolution(std::get<0>(currentResolution),
-                std::get<1>(currentResolution));
+            soid.setResolution(std::get<0>(res),
+                std::get<1>(res));
             return soid;
         }
 
-        polygonizer::MarchingCubes makeMCButterfly()
+        polygonizer::MarchingCubes makeMCButterfly(Resolution const& res)
         {
             using atlas::math::Matrix4;
             using atlas::math::Vector;
@@ -446,7 +436,7 @@ namespace bsoid
             tree.insertSkeletalFields({ sphere, torus });
 
             MarchingCubes mc(tree, "butterfly");
-            mc.setResolution(std::get<0>(currentResolution));
+            mc.setResolution(std::get<0>(res));
             return mc;
         }
     }

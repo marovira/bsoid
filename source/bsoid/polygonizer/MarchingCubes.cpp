@@ -369,29 +369,24 @@ namespace bsoid
             Timer<float> global;
 
             mLog << "Polygonizing model: " << mName << "\n";
+            mLog << "Resolution: " << std::to_string(mResolution.x) << ".\n";
             mLog << "#===========================#\n";
 
             global.start();
 
-            mLog << "Grid construction.\n";
-            mLog << "#===========================#\n";
             INFO_LOG("MC: Starting grid construction.");
             {
                 Timer<float> section;
                 section.start();
                 constructGrid();
-                mLog << "Constructed grid in " << section.elapsed() << " seconds\n";
             }
             INFO_LOG("MC: Grid construction done.");
 
-            mLog << "Triangle generation.\n";
-            mLog << "#===========================#\n";
             INFO_LOG("MC: Starting soup generation.");
             {
                 Timer<float> section;
                 section.start();
                 createTriangles();
-                mLog << "Generated triangles in " << section.elapsed() << " seconds\n";
             }
             INFO_LOG("MC: Soup generation done.");
 
@@ -401,6 +396,7 @@ namespace bsoid
             mLog << "#===========================#\n";
             mLog << "Total runtime: " << global.elapsed() << " seconds\n";
             mLog << "Total vertices generated: " << mMesh.vertices().size() << "\n";
+            mLog << "Total memory usage: " << size() << " bytes.\n";
             mLog << mTree->getFieldSummary();
         }
 
@@ -432,6 +428,16 @@ namespace bsoid
         void MarchingCubes::saveMesh()
         {
             mMesh.saveToFile(mName + "_mc.obj");
+        }
+
+        std::size_t MarchingCubes::size() const
+        {
+            std::size_t gridSize = mGrid.size() * mGrid.size() * mGrid.size() * 
+                sizeof(VoxelPoint);
+            std::size_t vertsSize = mVertices.size() * sizeof(atlas::math::Point);
+            std::size_t normsSize = mNormals.size() * sizeof(atlas::math::Normal);
+            std::size_t idxSize = mIndices.size() * sizeof(std::uint32_t);
+            return gridSize + vertsSize + normsSize + idxSize;
         }
 
         void MarchingCubes::constructGrid()

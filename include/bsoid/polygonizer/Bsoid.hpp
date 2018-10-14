@@ -52,6 +52,8 @@ namespace bsoid
 
             void saveMesh();
 
+            std::size_t size() const;
+
         private:
             struct LinePoint
             {

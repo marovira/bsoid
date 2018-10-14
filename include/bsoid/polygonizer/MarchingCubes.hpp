@@ -43,6 +43,7 @@ namespace bsoid
             void clearLog();
 
             void saveMesh();
+            std::size_t size() const;
 
         private:
             struct VoxelPoint

@@ -17,7 +17,7 @@
 #include <tbb/parallel_for.h>
 #include <glm/gtx/component_wise.hpp>
 
-#define DISABLE_PARALLEL 0
+#define DISABLE_PARALLEL 1
 
 
 namespace bsoid
@@ -100,29 +100,25 @@ namespace bsoid
             Timer<float> global;
 
             mLog << "Polygonizing model: " << mName << "\n";
+            mLog << "Resolution: " << std::to_string(mGridSize) << ", "
+                << std::to_string(mSvSize) << ".\n";
             mLog << "#===========================#\n";
 
             global.start();
-            mLog << "Lattice generation.\n";
-            mLog << "#===========================#\n";
             INFO_LOG("Bsoid: Starting Lattice generation.");
             // Generate lattices.
             {
                 Timer<float> section;
                 section.start();
                 makeVoxels();
-                mLog << "Constructed lattice in " << section.elapsed() << " seconds\n";
             }
             INFO_LOG("Bsoid: Lattice generation done.");
 
-            mLog << "\nMesh generation.\n";
-            mLog << "#===========================#\n";
             INFO_LOG("Bsoid: Starting mesh generation.");
             {
                 Timer<float> section;
                 section.start();
                 constructMesh();
-                mLog << "Constructed mesh in " << section.elapsed() << " seconds\n";
             }
             INFO_LOG("Bsoid: Mesh generation done.");
 
@@ -130,6 +126,7 @@ namespace bsoid
             mLog << "#===========================#\n";
             mLog << "Total runtime: " << global.elapsed() << " seconds\n";
             mLog << "Total vertices generated: " << mMesh.vertices().size() << "\n";
+            mLog << "Total memory usage: " << size() << " bytes\n";
             mLog << mTree->getFieldSummary();
         }
 
@@ -166,6 +163,22 @@ namespace bsoid
         void Bsoid::saveMesh()
         {
             mMesh.saveToFile(mName + ".obj");
+        }
+
+        std::size_t Bsoid::size() const
+        {
+            std::size_t voxelSize = mVoxels.size() * sizeof(Voxel);
+            std::size_t seenVoxelSize = mSeenVoxels.size() *
+                sizeof(std::pair<std::uint64_t, VoxelId>);
+            std::size_t seenPointsSize = mSeenPoints.size() *
+                sizeof(std::pair<std::uint64_t, VoxelId>);
+            std::size_t svSize = mSuperVoxels.size() *
+                sizeof(std::pair<std::uint64_t, VoxelId>);
+            std::size_t computedSize = mComputedPoints.size() *
+                sizeof(std::pair<std::uint128_t, LinePoint>);
+
+            return voxelSize + seenVoxelSize + seenPointsSize + svSize +
+                computedSize;
         }
 
         void Bsoid::makeVoxels()
@@ -487,7 +500,7 @@ namespace bsoid
 
                     while (!found)
                     {
-                        auto cPos = (2llu * v.id) + glm::u64vec3(1, 1, 1);
+                        auto cPos = (2llu * current.id) + glm::u64vec3(1, 1, 1);
                         Point origin = createCellPoint(cPos, mGridDelta / 2.0f);
                         float originVal = mTree->eval(origin);
                         auto norm = mTree->grad(origin);

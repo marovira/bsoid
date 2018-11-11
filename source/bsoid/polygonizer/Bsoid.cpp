@@ -17,7 +17,7 @@
 #include <tbb/parallel_for.h>
 #include <glm/gtx/component_wise.hpp>
 
-#define DISABLE_PARALLEL 1
+#define DISABLE_PARALLEL 0
 
 
 namespace bsoid

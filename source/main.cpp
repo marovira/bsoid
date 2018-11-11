@@ -35,6 +35,8 @@ std::vector<bsoid::models::ModelFn> getModels(
 
     result.push_back([res]() { return makeParticles(res); });
 
+    //result.push_back([res]() { return makeChain(res); });
+
     return result;
 }
 
@@ -56,6 +58,8 @@ std::vector<bsoid::models::MCModelFn> getMCModels(
     //result.push_back([res]() { return makeMCButterfly(res); });
 
     result.push_back([res]() {return makeMCParticles(res); });
+
+    //result.push_back([res]() {return makeMCChain(res); });
 
     return result;
 }
@@ -121,7 +125,7 @@ int main()
         std::fstream soidFile("bsoid_performance_summary.txt", 
             std::fstream::out);
         std::size_t res = 0;
-        for (std::size_t i = 0; i < 253; i++)
+        for (std::size_t i = 12; i < 253; i++)
         {
             res = 8 + (2 * i);
             INFO_LOG_V("Starting Bsoid run %d.", (i + 1));
@@ -140,7 +144,7 @@ int main()
         // Now run MC
         res = 0;
         std::fstream mcFile("mc_performance_summary.txt", std::fstream::out);
-        for (std::size_t i = 0; i < 253; i++)
+        for (std::size_t i = 12; i < 253; i++)
         {
             res = 8 + (2 * i);
             INFO_LOG_V("Staring MC run %d.", (i + 1));

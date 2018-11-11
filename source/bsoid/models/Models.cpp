@@ -479,9 +479,11 @@ namespace bsoid
             std::vector<int> parent(nodes.size());
             std::iota(parent.begin(), parent.end(), 0);
             nodes.push_back(parent);
-            particles.push_back(blend);
 
             BlobTree tree;
+            tree.insertSkeletalFields(particles);
+
+            particles.push_back(blend);
             tree.insertFields(particles);
             tree.insertNodeTree(nodes);
             tree.insertFieldTree(blend);
@@ -524,14 +526,94 @@ namespace bsoid
             std::vector<int> parent(nodes.size());
             std::iota(parent.begin(), parent.end(), 0);
             nodes.push_back(parent);
-            particles.push_back(blend);
 
             BlobTree tree;
+            tree.insertSkeletalFields(particles);
+
+            particles.push_back(blend);
             tree.insertFields(particles);
             tree.insertNodeTree(nodes);
             tree.insertFieldTree(blend);
 
             MarchingCubes mc(tree, "particles");
+            mc.setResolution(std::get<0>(res));
+            return mc;
+        }
+
+        bsoid::polygonizer::Bsoid makeChain(Resolution const& res)
+        {
+            using atlas::math::Point;
+            using fields::Sphere;
+            using operators::Blend;
+
+            static constexpr auto chainLength = 20;
+
+            std::vector<ImplicitFieldPtr> chain;
+            std::vector<std::vector<int>> nodes;
+            for (int i = 0; i < chainLength; ++i)
+            {
+                chain.emplace_back(std::make_shared<Sphere>(1.0f,
+                    Point(-10.0f + 2.0f * i, 0, 0)));
+
+                nodes.push_back({ -1 });
+            }
+
+            ImplicitOperatorPtr blend = std::make_shared<Blend>();
+            blend->insertFields(chain);
+
+            std::vector<int> roots(chainLength);
+            std::iota(roots.begin(), roots.end(), 0);
+            nodes.push_back(roots);
+
+            BlobTree tree;
+            tree.insertSkeletalFields(chain);
+
+            chain.push_back(blend);
+            tree.insertFields(chain);
+            tree.insertNodeTree(nodes);
+            tree.insertFieldTree(blend);
+
+            Bsoid soid(tree, "chain");
+            soid.setResolution(std::get<0>(res),
+                std::get<1>(res));
+            return soid;
+        }
+
+        bsoid::polygonizer::MarchingCubes makeMCChain(Resolution const& res)
+        {
+            using atlas::math::Point;
+            using fields::Sphere;
+            using operators::Blend;
+
+            static constexpr auto chainLength = 20;
+
+            std::vector<ImplicitFieldPtr> chain;
+            std::vector<std::vector<int>> nodes;
+            for (int i = 0; i < chainLength; ++i)
+            {
+                chain.emplace_back(std::make_shared<Sphere>(1.0f,
+                    Point(-10.0f + 2.0f * i, 0, 0)));
+
+                nodes.push_back({ -1 });
+            }
+
+            ImplicitOperatorPtr blend = std::make_shared<Blend>();
+            blend->insertFields(chain);
+
+            std::vector<int> roots(chainLength);
+            std::iota(roots.begin(), roots.end(), 0);
+            nodes.push_back(roots);
+
+            BlobTree tree;
+            tree.insertSkeletalFields(chain);
+
+            chain.push_back(blend);
+            tree.insertFields(chain);
+            tree.insertNodeTree(nodes);
+            tree.insertFieldTree(blend);
+
+
+            MarchingCubes mc(tree, "chain");
             mc.setResolution(std::get<0>(res));
             return mc;
         }

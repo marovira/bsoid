@@ -24,7 +24,7 @@ namespace bsoid
         constexpr Resolution midResolution = { 256, 64 };
         constexpr Resolution highResolution = { 1024, 256 };
 
-        constexpr Resolution currentResolution = lowResolution;
+        constexpr Resolution currentResolution = midResolution;
 
         using ModelFn = 
             std::function<bsoid::polygonizer::Bsoid()>;
@@ -42,6 +42,8 @@ namespace bsoid
         MAKE_FUNCTION(Butterfly);
 
         MAKE_FUNCTION(Particles);
+
+        MAKE_FUNCTION(Chain);
 
     }
 }

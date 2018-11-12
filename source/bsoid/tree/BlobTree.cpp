@@ -102,7 +102,7 @@ namespace bsoid
         std::string BlobTree::getFieldSummary() const
         {
             std::stringstream summary;
-            int total = 0;
+            std::uint64_t total = 0;
             int i = 0;
             for (auto& field : mSkeletalFields)
             {

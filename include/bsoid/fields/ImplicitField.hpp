@@ -45,7 +45,7 @@ namespace bsoid
 
             virtual std::vector<atlas::math::Point> getSeeds() const = 0;
 
-            int getCount() const
+            std::uint64_t getCount() const
             {
                 return mCounter.load();
             }

@@ -100,7 +100,7 @@ int main()
 
     WindowSettings settings;
     settings.contextVersion = ContextVersion(4, 5);
-    settings.isForwardCompat = TRUE;
+    settings.isForwardCompat = true;
     settings.isMaximized = true;
     settings.title = "Bsoid " + std::string(BSOID_VERSION_STRING);
 

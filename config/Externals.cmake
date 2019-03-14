@@ -8,6 +8,4 @@ if (BSOID_BUILD_DOCS)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${BSOID_CONFIG_ROOT})
-if (BSOID_PARALLEL)
-    find_package(TBB REQUIRED)
-endif()
+find_package(TBB REQUIRED)

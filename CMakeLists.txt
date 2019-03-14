@@ -79,11 +79,5 @@ include("${BSOID_CONFIG_ROOT}/SourceGroups.cmake")
 add_executable(bsoid ${BSOID_SOURCE_LIST} ${BSOID_INCLUDE_LIST}
     ${BSOID_SHADER_LIST})
 
-# Only link with TBB if we are using a parallel build.
-if (BSOID_PARALLEL)
-    target_link_libraries(bsoid tbb ${ATLAS_LIBRARIES})
-else()
-    target_link_libraries(bsoid ${ATLAS_LIBRARIES})
-endif()
-
+target_link_libraries(bsoid tbb ${ATLAS_LIBRARIES})
 set_target_properties(bsoid PROPERTIES FOLDER "bsoid")

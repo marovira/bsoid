@@ -6,8 +6,20 @@
 #include <emmintrin.h>
 #include <algorithm>
 
+namespace
+{
+    template <class T>
+    constexpr void swap(T&a, T& b) noexcept
+    {
+        T tmp{ a };
+        a = b;
+        b = tmp;
+    }
+}
+
 namespace std
 {
+
     struct uint128_t
     {
         constexpr uint128_t() :
@@ -43,8 +55,8 @@ namespace std
         constexpr uint128_t& operator=(uint128_t const& x)
         {
             uint128_t tmp(x);
-            std::swap(_low, tmp._low);
-            std::swap(_high, tmp._high);
+            ::swap(_low, tmp._low);
+            ::swap(_high, tmp._high);
             return *this;
         }
 

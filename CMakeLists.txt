@@ -29,6 +29,7 @@ set(BSOID_VERSION_FULL
 # Directory Variables.
 #=============================================================================#
 set(BSOID_SOURCE_DIR "${PROJECT_SOURCE_DIR}")
+set(BSOID_BINARY_DIR "${PROJECT_BINARY_DIR}")
 set(BSOID_INCLUDE_ROOT "${BSOID_SOURCE_DIR}/include")
 set(BSOID_SOURCE_ROOT "${BSOID_SOURCE_DIR}/source")
 set(BSOID_SHADER_ROOT "${BSOID_SOURCE_DIR}/shader")

@@ -500,7 +500,7 @@ namespace bsoid
 
                     while (!found)
                     {
-                        auto cPos = (2llu * current.id) + glm::u64vec3(1, 1, 1);
+                        auto cPos = (static_cast<std::uint64_t>(2) * current.id) + glm::u64vec3(1, 1, 1);
                         Point origin = createCellPoint(cPos, mGridDelta / 2.0f);
                         float originVal = mTree->eval(origin);
                         auto norm = mTree->grad(origin);

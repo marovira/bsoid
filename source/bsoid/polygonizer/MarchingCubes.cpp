@@ -338,7 +338,7 @@ namespace bsoid
 
         MarchingCubes::MarchingCubes(MarchingCubes&& mc) :
             mResolution(mc.mResolution),
-            mMesh(std::move(mMesh)),
+            mMesh(std::move(mc.mMesh)),
             mGrid(mc.mGrid),
             mTree(std::move(mc.mTree)),
             mMagic(mc.mMagic),
